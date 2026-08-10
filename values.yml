@@ -1,0 +1,19 @@
+imageCredentials:
+  - name: airsgatewayregistrycredentials
+    create: true
+    registry: "https://registry.portkey.ai"
+    username: "${PORTKEY_REGISTRY_USERNAME}"
+    password: "${PORTKEY_REGISTRY_PASSWORD}"
+
+environment:
+  create: true
+  secret: true
+  data:
+    PORTKEY_CLIENT_AUTH: "${PORTKEY_CLIENT_AUTH}"
+    ORGANISATIONS_TO_SYNC: "${ORGANISATIONS_TO_SYNC}"
+    PORT: "8787"
+
+service:
+  type: LoadBalancer
+  port: 80
+  containerPort: 8787

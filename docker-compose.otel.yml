@@ -1,0 +1,46 @@
+networks:
+  portkey-net:
+    name: portkey-net
+    external: true
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # Jaeger UI
+    networks:
+      - portkey-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.107.0
+    container_name: otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    depends_on:
+      - jaeger
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    networks:
+      - portkey-net
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./otel/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090" # Prometheus UI
+    networks:
+      - portkey-net
+
+volumes:
+  prometheus-data:
