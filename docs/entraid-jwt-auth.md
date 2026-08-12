@@ -119,6 +119,54 @@ PATCH https://graph.microsoft.com/v1.0/applications/{appObjectId}
 Body: {"api": {"acceptMappedClaims": true}}
 ```
 
+### 3e. Managing the policy with `az` commands
+
+All policy operations can be performed using `az rest` after logging in with `az login` (or `az login --allow-no-subscriptions` if your account has no subscription).
+
+**Find the policy ID** (if you don't already have it):
+```sh
+az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/{servicePrincipalId}/claimsMappingPolicies" \
+  --query "value[].{id:id, name:displayName}"
+```
+
+**View the full policy definition:**
+```sh
+az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}"
+```
+
+**Update (replace) the policy definition:**
+
+Build the updated definition as a JSON string — note the inner policy object must be serialised as an escaped string inside the `definition` array:
+
+```sh
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "definition": [
+      "{\"ClaimsMappingPolicy\":{\"Version\":1,\"IncludeBasicClaimSet\":\"true\",\"ClaimsSchema\":[
+        {\"Source\":\"user\",\"ID\":\"jobtitle\",              \"JwtClaimType\":\"jobtitle\"},
+        {\"Source\":\"user\",\"ID\":\"department\",             \"JwtClaimType\":\"department\"},
+        {\"Source\":\"user\",\"ID\":\"onpremisessamaccountname\",\"JwtClaimType\":\"uid\"},
+        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"mailnickname\"},
+        {\"Source\":\"user\",\"ID\":\"mail\",                   \"JwtClaimType\":\"email_id\"},
+        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"_user\"},
+        {\"Value\":\"<workspace-slug>\",                       \"JwtClaimType\":\"portkey_workspace\"},
+        {\"Value\":\"<organisations-to-sync-uuid>\",           \"JwtClaimType\":\"portkey_oid\"}
+      ]}}"
+    ],
+    "displayName": "PortkeyClaimsMappingPolicy"
+  }'
+```
+
+> The `PATCH` replaces the entire `definition` — include all claims you want, not just the ones that changed.
+
+**Verify the update was applied** by fetching a fresh token and inspecting it at [jwt.ms](https://jwt.ms). Changes take effect on the next token issuance; existing cached tokens are unaffected until they expire.
+
+> **Shortcut:** Re-running `Setup-EntraID-App.sh` and choosing an existing app will detect the assigned policy, show its current claims, and offer to update it interactively.
+
 ## 4. Configure the Vertex integration
 
 In the AIGW control plane, add an integration for `@vertex` and select the models you want available through this gateway.
