@@ -1,6 +1,6 @@
 networks:
-  portkey-net:
-    name: portkey-net
+  aigw-net:
+    name: aigw-net
     external: true
 
 services:
@@ -13,7 +13,7 @@ services:
     ports:
       - "16686:16686" # Jaeger UI
     networks:
-      - portkey-net
+      - aigw-net
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.107.0
@@ -28,7 +28,7 @@ services:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
     networks:
-      - portkey-net
+      - aigw-net
 
   prometheus:
     image: prom/prometheus:v2.55.1
@@ -40,7 +40,7 @@ services:
     ports:
       - "9090:9090" # Prometheus UI
     networks:
-      - portkey-net
+      - aigw-net
 
 volumes:
   prometheus-data:

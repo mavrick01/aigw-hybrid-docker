@@ -1,11 +1,11 @@
 networks:
-  portkey-net:
-    name: portkey-net
+  aigw-net:
+    name: aigw-net
 
 services:
-  portkey-redis:
+  aigw-redis:
     image: redis:7.2-alpine
-    container_name: portkey-redis
+    container_name: aigw-redis
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -15,28 +15,31 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - portkey-net
+      - aigw-net
 
-  portkey-gateway:
+  aigw-gateway:
     image: registry.portkey.ai/airsgw/gateway_enterprise:latest
-    container_name: portkey-gateway
+    container_name: aigw-gateway
     restart: unless-stopped
     depends_on:
-      portkey-redis:
+      aigw-redis:
         condition: service_healthy
     environment:
       PORTKEY_CLIENT_AUTH: ${PORTKEY_CLIENT_AUTH}
       ORGANISATIONS_TO_SYNC: ${ORGANISATIONS_TO_SYNC}
       SERVICE_NAME: ${SERVICE_NAME}
+      # LOGGING Controls
       ANALYTICS_STORE: control_plane
       LOG_STORE: control_plane
+      # REDIT Controls
       CACHE_STORE: redis
-      REDIS_URL: redis://portkey-redis:6379
+      REDIS_URL: redis://aigw-redis:6379
       # AIRS/Strata management plane (defaults in the image still point at the
       # legacy pre-acquisition control plane, which rejects Strata-issued tokens)
       ALBUS_BASEPATH: https://mp.us.prod.airs-gw.portkey.ai/api
       CONTROL_PLANE_BASEPATH: https://aigw.portkey.ai/v1
       CONFIG_READER_PATH: https://api.portkey.ai/v1/sync/model-configs
+      DEBUG_ENABLED: true
       # JWT settings
       JWT_ENABLED: ON
       JWT_LOCAL_AUTH_DEFAULT_SCOPES: completions.write,mcp.invoke
@@ -45,8 +48,9 @@ services:
       OTEL_ENDPOINT: "http://otel-collector:4318"
       EXPERIMENTAL_GEN_AI_OTEL_TRACES_ENABLED: true
       EXPERIMENTAL_GEN_AI_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-      TRUSTED_CUSTOM_HOSTS: "localhost,127.0.0.1,::1,minio,otel-collector,portkey-redis,host.docker.internal"
+      # LOCAL HOST ACCESS
+      TRUSTED_CUSTOM_HOSTS: "localhost,127.0.0.1,::1,minio,otel-collector,aigw-redis,host.docker.internal"
     ports:
       - "8787:8787"
     networks:
-      - portkey-net
+      - aigw-net
