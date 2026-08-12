@@ -22,10 +22,12 @@ In the [Entra Admin Center](https://entra.microsoft.com):
 
 1. Register a new application (App registrations → New registration).
 
-![EntraID->App Registration](./App-Registration.png)
+<img src="./App-Registration.png" alt="EntraID->App Registration" width="380">
+
 2. Add a redirect URI for the **loopback port Claude Desktop will use** — see step 6 (`http://localhost:8080` in this example).
 
-![App-Configuration](./App-Configuration.png)
+<img src="./App-Configuration.png" alt="EntraID->App Configuration" width="600">
+
 3. Note the **Application (client) ID** and the **Application tenant ID** (You will use it as the **OIDC Issuer URL**`https://login.microsoftonline.com/<tenant-id>/v2.0`) — both are needed in step 6.
 
 ![App-Details](./App-Details.png)
