@@ -30,45 +30,94 @@ In the [Entra Admin Center](https://entra.microsoft.com):
 
 ![App-Details](./App-Details.png)
 
-## 3. Add custom claims via a Claims Mapping Policy
+## 3. Configure custom claims
 
-The gateway requires specific claims in the ID token to identify the user and map them to the correct Portkey workspace. Because several of these claims (e.g. `onPremisesSamAccountName`) are not available in the standard EntraID token, they must be injected using an **EntraID Claims Mapping Policy** rather than the basic "optional claims" UI.
+The gateway requires specific claims in the ID token to identify the user and map them to the correct Portkey workspace. Several of these (e.g. `onPremisesSamAccountName`) are not emitted in a standard EntraID token, so they must be injected via an **EntraID Claims Mapping Policy** — a tenant-level policy that rewrites or adds claims before the token is issued.
 
-The `apply-claims-policy.sh` script in this repo creates and assigns the policy automatically. Run it once after registering the app:
+> **Tip:** The `Setup-EntraID-App.sh` script supplied with this deployment automates steps 3a–3d below, including creating the policy, assigning it to the service principal, and enabling `acceptMappedClaims`. You can use it instead of following the manual steps.
 
-```sh
-bash apply-claims-policy.sh
+### 3a. Add optional ID-token claims
+
+In the Entra Admin Center, go to **App registrations → your app → Token configuration** and add the following as optional claims on the **ID** token:
+
+| Claim name | Purpose |
+|---|---|
+| `upn` | User principal name |
+| `email` | User's email address |
+| `preferred_username` | Display name / login hint |
+
+These are available natively and can be added through the UI without a custom policy.
+
+### 3b. Create a Claims Mapping Policy
+
+The remaining claims require a Claims Mapping Policy, which must be created via the **Microsoft Graph API** or Azure CLI (there is no UI for this). The policy should be defined as follows, substituting your deployment-specific values where indicated:
+
+```json
+{
+  "definition": [
+    "{\"ClaimsMappingPolicy\":{\"Version\":1,\"IncludeBasicClaimSet\":\"true\",\"ClaimsSchema\":[
+      {\"Source\":\"user\",\"ID\":\"jobtitle\",           \"JwtClaimType\":\"jobtitle\"},
+      {\"Source\":\"user\",\"ID\":\"department\",          \"JwtClaimType\":\"department\"},
+      {\"Source\":\"user\",\"ID\":\"onpremisessamaccountname\",\"JwtClaimType\":\"uid\"},
+      {\"Source\":\"user\",\"ID\":\"mailnickname\",        \"JwtClaimType\":\"mailnickname\"},
+      {\"Source\":\"user\",\"ID\":\"mail\",                \"JwtClaimType\":\"email_id\"},
+      {\"Source\":\"user\",\"ID\":\"mailnickname\",        \"JwtClaimType\":\"_user\"},
+      {\"Value\":\"<your-workspace-slug>\",               \"JwtClaimType\":\"portkey_workspace\"},
+      {\"Value\":\"<your-ORGANISATIONS_TO_SYNC-uuid>\",   \"JwtClaimType\":\"portkey_oid\"}
+    ]}}"
+  ],
+  "displayName": "PortkeyClaimsMappingPolicy",
+  "type": "ClaimsMappingPolicy"
+}
 ```
 
-The policy it creates has `IncludeBasicClaimSet: true` (standard claims such as `sub`, `oid`, `iss` are preserved) and injects the following additional claims:
+The claims this policy injects are:
 
-| JWT claim | Source | Value / AD attribute |
+| JWT claim | Source | Notes |
 |---|---|---|
-| `jobtitle` | user attribute | `user.jobtitle` |
-| `department` | user attribute | `user.department` |
-| `uid` | user attribute | `user.onPremisesSamAccountName` |
-| `mailnickname` | user attribute | `user.mailNickname` |
-| `email_id` | user attribute | `user.mail` |
-| `_user` | user attribute | `user.mailNickname` |
-| `portkey_workspace` | static **or** user extension attribute | workspace slug, e.g. `ws-main-a-123456` |
-| `portkey_oid` | static | `95cb67bf-6fb5-4581-ac72-db32e2bb7f2c` (= `ORGANISATIONS_TO_SYNC`) |
+| `jobtitle` | `user.jobtitle` | |
+| `department` | `user.department` | |
+| `uid` | `user.onPremisesSamAccountName` | Requires on-prem AD sync |
+| `mailnickname` | `user.mailNickname` | |
+| `email_id` | `user.mail` | Primary user identity for the gateway |
+| `_user` | `user.mailNickname` | Internal user identifier |
+| `portkey_workspace` | Static value **or** extension attribute | See note below |
+| `portkey_oid` | Static value | Must match your deployment's `ORGANISATIONS_TO_SYNC` |
 
-The most load-bearing claims are `email_id` (user identity) and `portkey_oid` (org mapping).
+The most load-bearing claims are `email_id` (user identity) and `portkey_oid` (org routing). The gateway will reject tokens that are missing either.
 
-### Sourcing `portkey_workspace`
+#### Sourcing `portkey_workspace`
 
-The script prompts you to choose one of two approaches:
+You have two options for this claim:
 
-| Option | How it works | When to use |
+| Option | Policy entry | When to use |
 |---|---|---|
-| **Static value** | The same workspace slug is embedded directly in the policy definition | All users land in a single workspace |
-| **Extension attribute** | The claim is read from `extensionAttribute1`–`extensionAttribute15` on the user object | Different users (or user groups) need different workspaces |
+| **Static value** | `{"Value":"ws-main-a-997260","JwtClaimType":"portkey_workspace"}` | All users share a single workspace |
+| **User extension attribute** | `{"Source":"user","ID":"extensionattribute1","JwtClaimType":"portkey_workspace"}` | Per-user workspace assignment — set the workspace slug on each user's `extensionAttribute1`–`15` in Entra or on-prem AD |
 
-The extension-attribute approach is the recommended path for multi-workspace deployments. Set the workspace slug on each user via Entra admin, Graph API, or on-prem AD (the attributes sync automatically). The Claims Mapping Policy then reads it per-user at token issuance — no policy change required when users move between workspaces.
+The extension-attribute approach is recommended for multi-workspace deployments: the value is read from the user object at token issuance time, so users can be reassigned to different workspaces without any policy change.
 
-> **Note on group-based sourcing:** Claims Mapping Policies don't support mapping a group membership directly to a single claim value — you'd get an array of GUIDs, not a workspace slug. If you want workspace assignment driven by group membership, the practical approach is to use [dynamic group rules](https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership) to keep group membership in sync, and write the workspace slug back to an `extensionAttribute` on the user via a provisioning flow or Logic App.
+> **Note on group-based sourcing:** Claims Mapping Policies do not support deriving a single claim value from group membership — the `groups` claim returns an array of GUIDs, not a workspace slug. If you need workspace assignment driven by group membership, use [dynamic group rules](https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership) to keep membership in sync, and write the workspace slug back to an `extensionAttribute` on the user via a provisioning flow.
 
-> **Note:** `acceptMappedClaims` is also enabled on the app registration by the script. Without this, EntraID returns a 400 when exchanging the token.
+### 3c. Assign the policy to the service principal
+
+After creating the policy, assign it to the app's service principal:
+
+```
+POST https://graph.microsoft.com/v1.0/servicePrincipals/{servicePrincipalId}/claimsMappingPolicies/$ref
+
+Body: {"@odata.id": "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}"}
+```
+
+### 3d. Enable `acceptMappedClaims` on the app registration
+
+Without this, EntraID returns a `400` when the mapped token is exchanged. Patch the application object:
+
+```
+PATCH https://graph.microsoft.com/v1.0/applications/{appObjectId}
+
+Body: {"api": {"acceptMappedClaims": true}}
+```
 
 ## 4. Configure the Vertex integration
 
