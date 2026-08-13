@@ -6,6 +6,38 @@ CERT_INFO_CREATED=false
 EXISTING_POLICY_ID=""
 UPDATE_EXISTING_POLICY=false
 
+# ── Load ENTRAID_CLIENT_ID / ENTRAID_TENANT_ID from env or .env ───────────────
+ENTRAID_CLIENT_ID_VALUE="${ENTRAID_CLIENT_ID:-}"
+ENTRAID_TENANT_ID_VALUE="${ENTRAID_TENANT_ID:-}"
+if [ -f ".env" ]; then
+    if [ -z "$ENTRAID_CLIENT_ID_VALUE" ]; then
+        ENTRAID_CLIENT_ID_VALUE=$(grep "^ENTRAID_CLIENT_ID=" ".env" 2>/dev/null \
+            | head -1 | cut -d'=' -f2- | tr -d '"' | tr -d "'") || true
+    fi
+    if [ -z "$ENTRAID_TENANT_ID_VALUE" ]; then
+        ENTRAID_TENANT_ID_VALUE=$(grep "^ENTRAID_TENANT_ID=" ".env" 2>/dev/null \
+            | head -1 | cut -d'=' -f2- | tr -d '"' | tr -d "'") || true
+    fi
+fi
+
+# ── Helper: upsert a key=value in .env ────────────────────────────────────────
+upsert_env() {
+    local key="$1" value="$2"
+    python3 - "$key" "$value" << 'PYEOF'
+import sys, os, re
+key, value = sys.argv[1], sys.argv[2]
+env_file = '.env'
+lines = open(env_file).readlines() if os.path.exists(env_file) else []
+pattern = re.compile(f'^{re.escape(key)}=')
+updated = [f'{key}={value}\n' if pattern.match(l) else l for l in lines]
+if not any(pattern.match(l) for l in lines):
+    updated.append(f'{key}={value}\n')
+with open(env_file, 'w') as f:
+    f.writelines(updated)
+print(f"  {key} written to .env")
+PYEOF
+}
+
 echo "========================================"
 echo "  Portkey EntraID Claims Policy Setup   "
 echo "========================================"
@@ -38,8 +70,19 @@ APP_DISPLAY_NAME=""
 
 if [[ "$has_existing_app" =~ ^[Yy] ]]; then
     # ── Use existing app ───────────────────────────────────────────────────────
-    read -rp "Enter the App (Client) ID: " APP_CLIENT_ID
-    read -rp "Enter the Tenant ID:       " TENANT_ID
+    if [ -n "$ENTRAID_CLIENT_ID_VALUE" ]; then
+        read -rp "Enter the App (Client) ID [$ENTRAID_CLIENT_ID_VALUE]: " _input
+        APP_CLIENT_ID="${_input:-$ENTRAID_CLIENT_ID_VALUE}"
+    else
+        read -rp "Enter the App (Client) ID: " APP_CLIENT_ID
+    fi
+
+    if [ -n "$ENTRAID_TENANT_ID_VALUE" ]; then
+        read -rp "Enter the Tenant ID [$ENTRAID_TENANT_ID_VALUE]:       " _input
+        TENANT_ID="${_input:-$ENTRAID_TENANT_ID_VALUE}"
+    else
+        read -rp "Enter the Tenant ID:       " TENANT_ID
+    fi
 
     echo ""
     echo "Looking up app registration..."
@@ -200,6 +243,14 @@ print(json.dumps({'api': {'oauth2PermissionScopes': [scope]}}))
             }
         }'
     echo "Optional ID-token claims added."
+
+    # ── Offer to update .env with ENTRAID_CLIENT_ID / ENTRAID_TENANT_ID ──────
+    echo ""
+    read -rp "Update .env with ENTRAID_CLIENT_ID and ENTRAID_TENANT_ID? [Y/n]: " _update_env
+    if [[ ! "$_update_env" =~ ^[Nn] ]]; then
+        upsert_env "ENTRAID_CLIENT_ID" "$APP_CLIENT_ID"
+        upsert_env "ENTRAID_TENANT_ID" "$TENANT_ID"
+    fi
 fi
 
 # ── Ensure service principal exists ───────────────────────────────────────────
