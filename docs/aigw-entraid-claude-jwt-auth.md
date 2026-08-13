@@ -185,7 +185,11 @@ az rest --method PATCH \
 
 In the AIGW control plane, add an integration for `@vertex` and select the models you want available through this gateway.
 
-## 5. Create a AIGW config
+## 5. Enable JWT Authentication
+Enable JST Authentication and point it at your EntraID App (replace the tenant ID with your tenant ID). The patching earlier to v2, is due to the URL checking the v2.0 keys.
+![Enable JWT Authentication](./JWT-Auth.png)
+
+## 6. Create a AIGW config
 
 Create a config that routes to the Vertex integration, e.g.:
 
@@ -203,7 +207,7 @@ Create a config that routes to the Vertex integration, e.g.:
 
 Save it and note the generated **config ID** — it's used in step 6.
 
-## 6. Configure the 3rd-party (OIDC) provider in Claude Desktop
+## 7. Configure the 3rd-party (OIDC) provider in Claude Desktop
 
 In Claude Desktop's Developer menu, add a 3rd-party provider pointing at the local hybrid gateway container, with OIDC authentication:
 
