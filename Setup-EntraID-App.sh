@@ -178,6 +178,37 @@ print(json.dumps({'api': {'oauth2PermissionScopes': [scope]}}))
             ;;
     esac
 
+    # ── Expose an API on the app (required for az account get-access-token) ───
+    # Without an App ID URI and at least one scope the Azure CLI cannot request
+    # an access token for this app as a resource (AADSTS650057).
+    echo ""
+    echo "Setting App ID URI and exposing user_impersonation scope..."
+    EXPOSE_API_BODY=$(APP_CLIENT_ID="$APP_CLIENT_ID" python3 << 'PYEOF'
+import json, os, uuid
+client_id = os.environ['APP_CLIENT_ID']
+scope = {
+    'id': str(uuid.uuid4()),
+    'adminConsentDescription': 'Access the AIGW gateway on behalf of the signed-in user.',
+    'adminConsentDisplayName': 'Access AIGW gateway',
+    'isEnabled': True,
+    'type': 'User',
+    'userConsentDescription': 'Access the AIGW gateway on your behalf.',
+    'userConsentDisplayName': 'Access AIGW gateway',
+    'value': 'user_impersonation'
+}
+print(json.dumps({
+    'identifierUris': [f'api://{client_id}'],
+    'api': {'oauth2PermissionScopes': [scope]}
+}))
+PYEOF
+)
+    az rest --method PATCH \
+        --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+        --headers "Content-Type=application/json" \
+        --body "$EXPOSE_API_BODY"
+    echo "App ID URI set to api://$APP_CLIENT_ID"
+    SUMMARY_ITEMS+=("App ID URI:       api://$APP_CLIENT_ID")
+
     echo "App created — Client ID: $APP_CLIENT_ID"
     SUMMARY_ITEMS+=("App (Client) ID:  $APP_CLIENT_ID")
     SUMMARY_ITEMS+=("App Object ID:    $APP_OBJECT_ID")

@@ -14,8 +14,11 @@
 #   ENTRAID_TENANT_ID  — Entra tenant ID
 #
 # Optional:
-#   AIGW_ENV_FILE      — absolute path to a .env file to load vars from
-#                        (defaults to .env in the same directory as this script)
+#   ENTRAID_RESOURCE_URI — App ID URI to request a token for
+#                          (defaults to api://<ENTRAID_CLIENT_ID>)
+#                          The app registration must expose an API with this URI.
+#   AIGW_ENV_FILE        — absolute path to a .env file to load vars from
+#                          (defaults to .env in the same directory as this script)
 
 set -euo pipefail
 
@@ -49,9 +52,14 @@ if [ -z "$ENTRAID_TENANT_ID_VALUE" ]; then
     exit 1
 fi
 
+# ── Resolve resource URI — must match the app's exposed API identifier URI ─────
+# The app registration must have an App ID URI (api://<client-id>) and at least
+# one exposed scope; without this, az account get-access-token returns AADSTS650057.
+RESOURCE_URI="${ENTRAID_RESOURCE_URI:-api://${ENTRAID_CLIENT_ID_VALUE}}"
+
 # ── Try to get a token silently from the Azure CLI cache ──────────────────────
 JWT_TOKEN=$(az account get-access-token \
-    --resource "$ENTRAID_CLIENT_ID_VALUE" \
+    --resource "$RESOURCE_URI" \
     --tenant  "$ENTRAID_TENANT_ID_VALUE" \
     --query   "accessToken" \
     -o tsv 2>/dev/null) || JWT_TOKEN=""
@@ -62,7 +70,7 @@ if [ -z "$JWT_TOKEN" ]; then
     az login --tenant "$ENTRAID_TENANT_ID_VALUE" --allow-no-subscriptions >/dev/tty 2>&1
 
     JWT_TOKEN=$(az account get-access-token \
-        --resource "$ENTRAID_CLIENT_ID_VALUE" \
+        --resource "$RESOURCE_URI" \
         --tenant  "$ENTRAID_TENANT_ID_VALUE" \
         --query   "accessToken" \
         -o tsv 2>/dev/null) || JWT_TOKEN=""

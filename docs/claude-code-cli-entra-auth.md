@@ -56,6 +56,7 @@ Edit (or create) `~/.claude/settings.json`:
 | `ANTHROPIC_BASE_URL` | Your gateway URL — use `http://localhost:8787` for local Docker |
 | `ENTRAID_CLIENT_ID` | The Application (client) ID from the EntraID app registration |
 | `ENTRAID_TENANT_ID` | Your Entra tenant ID |
+| `ENTRAID_RESOURCE_URI` | *(optional)* App ID URI to request a token for — defaults to `api://<ENTRAID_CLIENT_ID>`. Override only if your app registration uses a custom URI. |
 
 > **Tip:** If you have `ENTRAID_CLIENT_ID` and `ENTRAID_TENANT_ID` in your shell environment already (e.g. via `direnv`), you can omit the `env` block and the script will pick them up directly.
 
@@ -81,11 +82,40 @@ To confirm requests are landing in the gateway, check the control plane logs or 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| `AADSTS650057: Invalid resource` | App registration has no App ID URI / exposed scope | Run the fix commands below, or re-run `Setup-EntraID-App.sh` on the existing app |
 | `ENTRAID_CLIENT_ID not set` | Variable not in env or `.env` | Add it to the `env` block in `settings.json` or run `Setup-EntraID-App.sh` to populate `.env` |
 | `401 Unauthorized` from gateway | JWT invalid or missing claims | Decode the token at [jwt.ms](https://jwt.ms) and verify `portkey_oid` and `email_id` are present; check gateway logs |
 | Browser opens on every run | Azure CLI token cache expired | Normal — sign in; the cache is then reused for the token lifetime (~1 h) |
 | `az: command not found` | Azure CLI not installed | `brew install azure-cli` |
 | Gateway returns `502` / no route | No Portkey config header and no default config set | Set a default config in the AIGW control plane for your workspace |
+
+### Fixing AADSTS650057 on an existing app registration
+
+If the app was created before the CLI token flow was needed, expose the API manually:
+
+```sh
+APP_OBJECT_ID=$(az ad app show --id "$ENTRAID_CLIENT_ID" --query "id" -o tsv)
+SCOPE_ID=$(python3 -c "import uuid; print(uuid.uuid4())")
+
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+  --headers "Content-Type=application/json" \
+  --body "{
+    \"identifierUris\": [\"api://$ENTRAID_CLIENT_ID\"],
+    \"api\": {
+      \"oauth2PermissionScopes\": [{
+        \"id\": \"$SCOPE_ID\",
+        \"adminConsentDescription\": \"Access the AIGW gateway\",
+        \"adminConsentDisplayName\": \"Access AIGW gateway\",
+        \"isEnabled\": true,
+        \"type\": \"User\",
+        \"value\": \"user_impersonation\"
+      }]
+    }
+  }"
+```
+
+After running this, `az account get-access-token --resource "api://$ENTRAID_CLIENT_ID"` will succeed.
 
 ## Updating credentials
 
