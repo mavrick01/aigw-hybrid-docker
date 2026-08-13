@@ -67,7 +67,11 @@ JWT_TOKEN=$(az account get-access-token \
 # ── If expired or not logged in, trigger interactive browser login ─────────────
 if [ -z "$JWT_TOKEN" ]; then
     echo "EntraID session expired or not logged in. Launching browser for login..." >/dev/tty
-    az login --tenant "$ENTRAID_TENANT_ID_VALUE" --allow-no-subscriptions >/dev/tty 2>&1
+    # Include the resource scope so the consent prompt fires if not already granted
+    az login \
+        --tenant "$ENTRAID_TENANT_ID_VALUE" \
+        --scope "${RESOURCE_URI}/.default" \
+        --allow-no-subscriptions >/dev/tty 2>&1
 
     JWT_TOKEN=$(az account get-access-token \
         --resource "$RESOURCE_URI" \
