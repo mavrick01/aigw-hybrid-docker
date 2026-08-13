@@ -32,10 +32,10 @@ cp .env.example .env
 docker compose pull && docker compose up -d
 
 # View logs
-docker compose logs -f portkey-gateway
+docker compose logs -f aigw-gateway
 
 # Restart gateway only (e.g. after env changes)
-docker compose restart portkey-gateway
+docker compose restart aigw-gateway
 
 # Stop
 docker compose down
@@ -49,11 +49,11 @@ The gateway is available at `http://localhost:8787`.
 
 `docker-compose.otel.yml` is a separate, optional stack that adds:
 
-- **Prometheus** — scrapes gateway metrics from `http://portkey-gateway:8787/metrics`
-- **OpenTelemetry Collector** — receives OTLP traces from the gateway (`OTEL_ENDPOINT`) and forwards them to Jaeger
+- **Prometheus** — scrapes gateway metrics
+- **OpenTelemetry Collector** — receives OTLP traces from the gateway and forwards them to Jaeger
 - **Jaeger** — all-in-one, in-memory trace storage + UI
 
-It connects to the main stack via the shared `portkey-net` Docker network, so the main stack must be started first (it creates the network).
+It connects to the main stack via the shared `aigw-net` Docker network, so the main stack must be started first.
 
 ```sh
 # Start the main stack first (creates the shared network)
@@ -70,6 +70,8 @@ docker compose -f docker-compose.otel.yml down
 |---|---|
 | Prometheus | `http://localhost:9090` |
 | Jaeger UI | `http://localhost:16686` |
+| OTLP (gRPC) | `http://localhost:4317` |
+| OTLP (HTTP) | `http://localhost:4318` |
 
 Config files live under `otel/`:
 - `otel/prometheus.yml` — scrape config
@@ -105,8 +107,10 @@ The `export $(grep -v '^#' .env | xargs)` step loads your `.env` into the curren
 ## Architecture
 
 ```
-portkey-gateway (port 8787)
-    └── depends on portkey-redis (port 6379, healthcheck gated)
+aigw-gateway (port 8787)
+    └── depends on aigw-redis (port 6379, healthcheck gated)
+
+aigw-net (shared Docker network — also used by the OTEL stack)
 ```
 
 The gateway is stateless. Redis is used only as a cache. Analytics and logs are shipped to Portkey's control plane — nothing is stored locally.
@@ -121,4 +125,4 @@ The gateway is stateless. Redis is used only as a cache. Analytics and logs are 
 
 ## Guides
 
-- [EntraID (OIDC/JWT) authentication for Claude Desktop](docs/entraid-jwt-auth.md)
+- [EntraID (OIDC/JWT) authentication for Claude Desktop](docs/aigw-entraid-claude-jwt-auth.md)
