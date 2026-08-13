@@ -32,6 +32,18 @@ In the [Entra Admin Center](https://entra.microsoft.com):
 
 ![App-Details](./App-Details.png)
 
+4. **Set the token version to v2.** In the app **Manifest** tab, confirm `"accessTokenAcceptedVersion"` is `2`, or patch it via Graph API:
+
+   ```
+   PATCH https://graph.microsoft.com/v1.0/applications/{appObjectId}
+
+   Body: {"api": {"requestedAccessTokenVersion": 2}}
+   ```
+
+   Without this, EntraID issues v1.0 tokens whose issuer (`https://sts.windows.net/<tenant-id>/`) won't match the v2.0 issuer URL configured in step 6, causing authentication to fail.
+
+   > The `Setup-EntraID-App.sh` script applies this automatically.
+
 ## 3. Configure custom claims
 
 The gateway requires specific claims in the ID token to identify the user and map them to the correct Portkey workspace. Several of these (e.g. `onPremisesSamAccountName`) are not emitted in a standard EntraID token, so they must be injected via an **EntraID Claims Mapping Policy** — a tenant-level policy that rewrites or adds claims before the token is issued.

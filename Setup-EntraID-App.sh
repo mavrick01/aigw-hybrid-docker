@@ -434,14 +434,14 @@ fi
 
 SUMMARY_ITEMS+=("Claims Policy ID: $POLICY_ID")
 
-# ── Enable acceptMappedClaims ──────────────────────────────────────────────────
+# ── Enable acceptMappedClaims and set token version to v2 ─────────────────────
 echo ""
-echo "Enabling acceptMappedClaims on app registration..."
+echo "Enabling acceptMappedClaims and setting token version to v2..."
 az rest --method PATCH \
     --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
     --headers "Content-Type=application/json" \
-    --body '{"api": {"acceptMappedClaims": true}}'
-echo "acceptMappedClaims enabled."
+    --body '{"api": {"acceptMappedClaims": true, "requestedAccessTokenVersion": 2}}'
+echo "acceptMappedClaims enabled; token version set to v2."
 
 # ── Assign policy to service principal (new policies only) ────────────────────
 if [ "$UPDATE_EXISTING_POLICY" = false ]; then
