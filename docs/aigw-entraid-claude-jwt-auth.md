@@ -133,9 +133,57 @@ PATCH https://graph.microsoft.com/v1.0/applications/{appObjectId}
 Body: {"api": {"acceptMappedClaims": true}}
 ```
 
-### 3e. Expose the API and authorize the Azure CLI (for CLI token flow)
+### 3e. Managing the policy with `az` commands
 
-This step is **required for Claude Code CLI** (`get-az-token.sh`) and optional for Claude Desktop. It configures the app registration so the Azure CLI can request an access token for it.
+All policy operations can be performed using `az rest` after logging in with `az login` (or `az login --allow-no-subscriptions` if your account has no subscription).
+
+**Find the policy ID** (if you don't already have it):
+```sh
+az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/{servicePrincipalId}/claimsMappingPolicies" \
+  --query "value[].{id:id, name:displayName}"
+```
+
+**View the full policy definition:**
+```sh
+az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}"
+```
+
+**Update (replace) the policy definition:**
+
+Build the updated definition as a JSON string — note the inner policy object must be serialised as an escaped string inside the `definition` array:
+
+```sh
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "definition": [
+      "{\"ClaimsMappingPolicy\":{\"Version\":1,\"IncludeBasicClaimSet\":\"true\",\"ClaimsSchema\":[
+        {\"Source\":\"user\",\"ID\":\"jobtitle\",              \"JwtClaimType\":\"jobtitle\"},
+        {\"Source\":\"user\",\"ID\":\"department\",             \"JwtClaimType\":\"department\"},
+        {\"Source\":\"user\",\"ID\":\"onpremisessamaccountname\",\"JwtClaimType\":\"uid\"},
+        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"mailnickname\"},
+        {\"Source\":\"user\",\"ID\":\"mail\",                   \"JwtClaimType\":\"email_id\"},
+        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"_user\"},
+        {\"Value\":\"<workspace-slug>\",                       \"JwtClaimType\":\"portkey_workspace\"},
+        {\"Value\":\"<organisations-to-sync-uuid>\",           \"JwtClaimType\":\"portkey_oid\"}
+      ]}}"
+    ],
+    "displayName": "PortkeyClaimsMappingPolicy"
+  }'
+```
+
+> The `PATCH` replaces the entire `definition` — include all claims you want, not just the ones that changed.
+
+**Verify the update was applied** by fetching a fresh token and inspecting it at [jwt.ms](https://jwt.ms). Changes take effect on the next token issuance; existing cached tokens are unaffected until they expire.
+
+> **Shortcut:** Re-running `Setup-EntraID-App.sh` and choosing an existing app will detect the assigned policy, show its current claims, and offer to update it interactively.
+
+### 3f. Expose the API and authorize the Azure CLI (for CLI token flow)
+
+This step is **required for Claude Code CLI** (`get-az-token.sh`) and optional for Claude Desktop. It configures the app registration so the Azure CLI can request an access token containing the mapped claims from steps 3a–3e.
 
 Three things must be in place:
 
@@ -143,9 +191,9 @@ Three things must be in place:
 |---|---|
 | App ID URI set (`api://<client-id>`) | Without it `az account get-access-token` returns `AADSTS650057` |
 | At least one scope exposed | EntraID requires a scope to issue a delegated token |
-| Azure CLI pre-authorized | Without pre-authorization `az login --scope` returns `AADSTS65001` because the Azure CLI's own Microsoft-managed app registration cannot be modified to list your custom API |
+| Azure CLI pre-authorized | Without pre-authorization `az login --scope` returns `AADSTS65001` — the Azure CLI's Microsoft-managed app registration cannot be modified to list your custom API |
 
-> **Note on audience:** `acceptMappedClaims` requires the token audience to be the bare application GUID. Always use the client ID (e.g. `9629c204-...`) as the resource — not the `api://` URI form — when calling `az account get-access-token`. Using `api://` triggers `AADSTS501461`.
+> **Note on audience:** `acceptMappedClaims` requires the token audience to be the bare application GUID. Always use the client ID (e.g. `9629c204-...`) as the resource when calling `az account get-access-token` — not the `api://` URI form. Using the URI triggers `AADSTS501461`.
 
 #### Step 1 — Set the App ID URI and expose a scope
 
@@ -203,71 +251,20 @@ az rest --method GET \
   --query "{identifierUris:identifierUris, scopes:api.oauth2PermissionScopes[].value, preAuthorizedApps:api.preAuthorizedApplications[].appId}"
 ```
 
-Then test the token fetch — note the bare GUID, not the `api://` form:
+Fetch a token and decode it to verify the custom claims from steps 3a–3e are present:
 
 ```sh
-az account get-access-token \
+TOKEN=$(az account get-access-token \
   --resource "$ENTRAID_CLIENT_ID" \
   --tenant  "$ENTRAID_TENANT_ID" \
-  --query   "accessToken" -o tsv
-```
+  --query   "accessToken" -o tsv)
 
-Decode the result to verify the custom claims are present:
-
-```sh
-TOKEN=$(az account get-access-token --resource "$ENTRAID_CLIENT_ID" --tenant "$ENTRAID_TENANT_ID" --query "accessToken" -o tsv)
 echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
 ```
 
+Check that `portkey_oid`, `email_id`, and `uid` appear and that `portkey_oid` matches your deployment's `ORGANISATIONS_TO_SYNC` value.
+
 > `Setup-EntraID-App.sh` performs steps 1–2 automatically for new app registrations. For an existing app, run these commands manually or re-run the script and choose the existing app.
-
-### 3f. Managing the policy with `az` commands
-
-All policy operations can be performed using `az rest` after logging in with `az login` (or `az login --allow-no-subscriptions` if your account has no subscription).
-
-**Find the policy ID** (if you don't already have it):
-```sh
-az rest --method GET \
-  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/{servicePrincipalId}/claimsMappingPolicies" \
-  --query "value[].{id:id, name:displayName}"
-```
-
-**View the full policy definition:**
-```sh
-az rest --method GET \
-  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}"
-```
-
-**Update (replace) the policy definition:**
-
-Build the updated definition as a JSON string — note the inner policy object must be serialised as an escaped string inside the `definition` array:
-
-```sh
-az rest --method PATCH \
-  --uri "https://graph.microsoft.com/v1.0/policies/claimsMappingPolicies/{policyId}" \
-  --headers "Content-Type=application/json" \
-  --body '{
-    "definition": [
-      "{\"ClaimsMappingPolicy\":{\"Version\":1,\"IncludeBasicClaimSet\":\"true\",\"ClaimsSchema\":[
-        {\"Source\":\"user\",\"ID\":\"jobtitle\",              \"JwtClaimType\":\"jobtitle\"},
-        {\"Source\":\"user\",\"ID\":\"department\",             \"JwtClaimType\":\"department\"},
-        {\"Source\":\"user\",\"ID\":\"onpremisessamaccountname\",\"JwtClaimType\":\"uid\"},
-        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"mailnickname\"},
-        {\"Source\":\"user\",\"ID\":\"mail\",                   \"JwtClaimType\":\"email_id\"},
-        {\"Source\":\"user\",\"ID\":\"mailnickname\",           \"JwtClaimType\":\"_user\"},
-        {\"Value\":\"<workspace-slug>\",                       \"JwtClaimType\":\"portkey_workspace\"},
-        {\"Value\":\"<organisations-to-sync-uuid>\",           \"JwtClaimType\":\"portkey_oid\"}
-      ]}}"
-    ],
-    "displayName": "PortkeyClaimsMappingPolicy"
-  }'
-```
-
-> The `PATCH` replaces the entire `definition` — include all claims you want, not just the ones that changed.
-
-**Verify the update was applied** by fetching a fresh token and inspecting it at [jwt.ms](https://jwt.ms). Changes take effect on the next token issuance; existing cached tokens are unaffected until they expire.
-
-> **Shortcut:** Re-running `Setup-EntraID-App.sh` and choosing an existing app will detect the assigned policy, show its current claims, and offer to update it interactively.
 
 ## 4. Configure the Vertex integration
 
