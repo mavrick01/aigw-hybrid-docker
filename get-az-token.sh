@@ -52,10 +52,12 @@ if [ -z "$ENTRAID_TENANT_ID_VALUE" ]; then
     exit 1
 fi
 
-# ── Resolve resource URI — must match the app's exposed API identifier URI ─────
-# The app registration must have an App ID URI (api://<client-id>) and at least
-# one exposed scope; without this, az account get-access-token returns AADSTS650057.
-RESOURCE_URI="${ENTRAID_RESOURCE_URI:-api://${ENTRAID_CLIENT_ID_VALUE}}"
+# ── Resolve resource URI ───────────────────────────────────────────────────────
+# Use the bare client GUID (not api://<client-id>): acceptMappedClaims requires
+# the audience to match the application GUID (AADSTS501461 otherwise).
+# The app registration must expose an API and pre-authorize the Azure CLI app
+# (04b07795-8ddb-461a-bbee-02f9e1bf7b46) on all scopes — see the setup guide.
+RESOURCE_URI="${ENTRAID_RESOURCE_URI:-${ENTRAID_CLIENT_ID_VALUE}}"
 
 # ── Try to get a token silently from the Azure CLI cache ──────────────────────
 JWT_TOKEN=$(az account get-access-token \

@@ -82,7 +82,9 @@ To confirm requests are landing in the gateway, check the control plane logs or 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `AADSTS650057: Invalid resource` | App registration has no App ID URI / exposed scope | Run the fix commands below, or re-run `Setup-EntraID-App.sh` on the existing app |
+| `AADSTS650057: Invalid resource` | App not exposed as an API, or Azure CLI not pre-authorized | Run the fix commands below, or re-run `Setup-EntraID-App.sh` on the existing app |
+| `AADSTS501461: AcceptMappedClaims...` | Resource was requested as `api://<id>` instead of bare GUID | `ENTRAID_RESOURCE_URI` must be the bare client GUID, not the `api://` URI — check your `.env` |
+| `AADSTS65001: consent required` | Azure CLI not pre-authorized on the resource app | Pre-authorize Azure CLI (see fix commands below) |
 | `ENTRAID_CLIENT_ID not set` | Variable not in env or `.env` | Add it to the `env` block in `settings.json` or run `Setup-EntraID-App.sh` to populate `.env` |
 | `401 Unauthorized` from gateway | JWT invalid or missing claims | Decode the token at [jwt.ms](https://jwt.ms) and verify `portkey_oid` and `email_id` are present; check gateway logs |
 | Browser opens on every run | Azure CLI token cache expired | Normal — sign in; the cache is then reused for the token lifetime (~1 h) |

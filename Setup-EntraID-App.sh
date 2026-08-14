@@ -209,6 +209,26 @@ PYEOF
     echo "App ID URI set to api://$APP_CLIENT_ID"
     SUMMARY_ITEMS+=("App ID URI:       api://$APP_CLIENT_ID")
 
+    # ── Pre-authorize Azure CLI so get-az-token.sh works without consent prompt ─
+    # acceptMappedClaims requires the bare GUID as resource audience; pre-auth
+    # bypasses the client-registration check that causes AADSTS650057/65001.
+    echo ""
+    echo "Pre-authorizing Azure CLI (04b07795-...) for all exposed scopes..."
+    SCOPE_IDS=$(az rest --method GET \
+        --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+        --query "api.oauth2PermissionScopes[].id" -o json)
+    PREAUTH_BODY=$(echo "$SCOPE_IDS" | python3 -c "
+import json, sys
+ids = json.load(sys.stdin)
+print(json.dumps({'api': {'preAuthorizedApplications': [{'appId': '04b07795-8ddb-461a-bbee-02f9e1bf7b46', 'delegatedPermissionIds': ids}]}}))
+")
+    az rest --method PATCH \
+        --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+        --headers "Content-Type=application/json" \
+        --body "$PREAUTH_BODY"
+    echo "Azure CLI pre-authorized."
+    SUMMARY_ITEMS+=("Azure CLI pre-auth: 04b07795-8ddb-461a-bbee-02f9e1bf7b46")
+
     echo "App created — Client ID: $APP_CLIENT_ID"
     SUMMARY_ITEMS+=("App (Client) ID:  $APP_CLIENT_ID")
     SUMMARY_ITEMS+=("App Object ID:    $APP_OBJECT_ID")
