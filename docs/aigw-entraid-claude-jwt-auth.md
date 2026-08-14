@@ -133,7 +133,95 @@ PATCH https://graph.microsoft.com/v1.0/applications/{appObjectId}
 Body: {"api": {"acceptMappedClaims": true}}
 ```
 
-### 3e. Managing the policy with `az` commands
+### 3e. Expose the API and authorize the Azure CLI (for CLI token flow)
+
+This step is **required for Claude Code CLI** (`get-az-token.sh`) and optional for Claude Desktop. It configures the app registration so the Azure CLI can request an access token for it.
+
+Three things must be in place:
+
+| Requirement | Why |
+|---|---|
+| App ID URI set (`api://<client-id>`) | Without it `az account get-access-token` returns `AADSTS650057` |
+| At least one scope exposed | EntraID requires a scope to issue a delegated token |
+| Azure CLI pre-authorized | Without pre-authorization `az login --scope` returns `AADSTS65001` because the Azure CLI's own Microsoft-managed app registration cannot be modified to list your custom API |
+
+> **Note on audience:** `acceptMappedClaims` requires the token audience to be the bare application GUID. Always use the client ID (e.g. `9629c204-...`) as the resource — not the `api://` URI form — when calling `az account get-access-token`. Using `api://` triggers `AADSTS501461`.
+
+#### Step 1 — Set the App ID URI and expose a scope
+
+```sh
+APP_OBJECT_ID=$(az ad app show --id "$ENTRAID_CLIENT_ID" --query "id" -o tsv)
+
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+  --headers "Content-Type=application/json" \
+  --body "{
+    \"identifierUris\": [\"api://$ENTRAID_CLIENT_ID\"],
+    \"api\": {
+      \"oauth2PermissionScopes\": [{
+        \"id\": \"$(python3 -c 'import uuid; print(uuid.uuid4())')\",
+        \"adminConsentDescription\": \"Access the AIGW gateway on behalf of the signed-in user.\",
+        \"adminConsentDisplayName\": \"Access AIGW gateway\",
+        \"isEnabled\": true,
+        \"type\": \"User\",
+        \"userConsentDescription\": \"Access the AIGW gateway on your behalf.\",
+        \"userConsentDisplayName\": \"Access AIGW gateway\",
+        \"value\": \"user_impersonation\"
+      }]
+    }
+  }"
+```
+
+#### Step 2 — Pre-authorize the Azure CLI
+
+Fetch the scope GUIDs just created, then add the Azure CLI app (`04b07795-8ddb-461a-bbee-02f9e1bf7b46`) as a pre-authorized client:
+
+```sh
+SCOPE_IDS=$(az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+  --query "api.oauth2PermissionScopes[].id" -o json)
+
+PREAUTH_BODY=$(echo "$SCOPE_IDS" | python3 -c "
+import json, sys
+ids = json.load(sys.stdin)
+print(json.dumps({'api': {'preAuthorizedApplications': [{'appId': '04b07795-8ddb-461a-bbee-02f9e1bf7b46', 'delegatedPermissionIds': ids}]}}))
+")
+
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+  --headers "Content-Type=application/json" \
+  --body "$PREAUTH_BODY"
+```
+
+#### Step 3 — Verify and test
+
+Confirm the configuration was applied:
+
+```sh
+az rest --method GET \
+  --uri "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+  --query "{identifierUris:identifierUris, scopes:api.oauth2PermissionScopes[].value, preAuthorizedApps:api.preAuthorizedApplications[].appId}"
+```
+
+Then test the token fetch — note the bare GUID, not the `api://` form:
+
+```sh
+az account get-access-token \
+  --resource "$ENTRAID_CLIENT_ID" \
+  --tenant  "$ENTRAID_TENANT_ID" \
+  --query   "accessToken" -o tsv
+```
+
+Decode the result to verify the custom claims are present:
+
+```sh
+TOKEN=$(az account get-access-token --resource "$ENTRAID_CLIENT_ID" --tenant "$ENTRAID_TENANT_ID" --query "accessToken" -o tsv)
+echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+```
+
+> `Setup-EntraID-App.sh` performs steps 1–2 automatically for new app registrations. For an existing app, run these commands manually or re-run the script and choose the existing app.
+
+### 3f. Managing the policy with `az` commands
 
 All policy operations can be performed using `az rest` after logging in with `az login` (or `az login --allow-no-subscriptions` if your account has no subscription).
 
