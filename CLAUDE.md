@@ -89,10 +89,32 @@ Notable env vars already hardcoded in `docker-compose.yml` (no `.env` entry need
 
 `values.yml` duplicates the required variables for Kubernetes — keep secret values out of version control (use a secrets manager or `.gitignore` the file).
 
+## Testing the gateway
+
+Smoke-test the token and gateway end-to-end (requires `./get-az-token.sh` configured):
+
+```sh
+TOKEN=$(./get-az-token.sh) && \
+curl http://127.0.0.1:8787/v1/messages \
+  -H "x-portkey-config: <config-id>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "anthropic.claude-sonnet-5", "max_tokens": 250, "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+> **Model prefix**: Vertex AI routing requires the `anthropic.` prefix on model names (e.g. `anthropic.claude-sonnet-5`). Without it the gateway returns `messages is not supported by vertex-ai`.
+
+Decode the JWT to inspect claims:
+
+```sh
+echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+```
+
 ## Docs
 
 | File | Purpose |
 |---|---|
 | `docs/aigw-entraid-claude-jwt-auth.md` | End-to-end guide for EntraID OIDC/JWT auth with Claude Desktop |
-| `docs/custom-claims-setup.md` | Earlier per-deployment notes on Claims Mapping Policy setup |
+| `docs/claude-code-cli-entra-auth.md` | Guide for Claude Code CLI with EntraID JWT auth via `get-az-token.sh` |
 | `Setup-EntraID-App.sh` | Interactive script that automates EntraID app registration and claims policy |
+| `get-az-token.sh` | `apiKeyHelper` script for Claude Code CLI — fetches EntraID access token via Azure CLI |

@@ -19,7 +19,7 @@ Claude Code CLI
 
 ## Prerequisites
 
-- The gateway stack running (`docker compose up -d`)
+- The gateway stack running 
 - The EntraID app registration configured for this gateway — see [entraid-jwt-auth guide](aigw-entraid-claude-jwt-auth.md) or run `Setup-EntraID-App.sh`
 - `ENTRAID_CLIENT_ID` and `ENTRAID_TENANT_ID` in your `.env` (added automatically by `Setup-EntraID-App.sh`)
 - Azure CLI installed (`brew install azure-cli`) and logged in at least once
@@ -66,9 +66,30 @@ If your gateway requires an explicit routing config (the `x-portkey-config` head
 
 Alternatively, you can set it per-project in `.claude/settings.json` at the repo level if Claude Code CLI adds support for custom request headers in your version.
 
-## 4. Verify
+## 4. Verify with curl
 
-Start Claude Code in a terminal:
+Before starting Claude Code, confirm the token and gateway are working end-to-end:
+
+```sh
+TOKEN=$(./get-az-token.sh) && \
+curl http://127.0.0.1:8787/v1/messages \
+  -H "x-portkey-config: <your-config-id>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "anthropic.claude-sonnet-5", "max_tokens": 250, "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+> **Model prefix**: when routing via Vertex AI, model names must be prefixed with `anthropic.` (e.g. `anthropic.claude-sonnet-5`). Without the prefix the gateway returns `messages is not supported by vertex-ai`.
+
+If the request succeeds, inspect the token claims to verify the gateway claims are correct:
+
+```sh
+echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+```
+
+Check that `portkey_oid`, `email_id`, and `uid` are present and match your deployment's `ORGANISATIONS_TO_SYNC` value.
+
+## 5. Start Claude Code
 
 ```sh
 claude
@@ -86,10 +107,18 @@ To confirm requests are landing in the gateway, check the control plane logs or 
 | `AADSTS501461: AcceptMappedClaims...` | Resource was requested as `api://<id>` instead of bare GUID | `ENTRAID_RESOURCE_URI` must be the bare client GUID, not the `api://` URI — check your `.env` |
 | `AADSTS65001: consent required` | Azure CLI not pre-authorized on the resource app | Pre-authorize Azure CLI (see fix commands below) |
 | `ENTRAID_CLIENT_ID not set` | Variable not in env or `.env` | Add it to the `env` block in `settings.json` or run `Setup-EntraID-App.sh` to populate `.env` |
-| `401 Unauthorized` from gateway | JWT invalid or missing claims | Decode the token at [jwt.ms](https://jwt.ms) and verify `portkey_oid` and `email_id` are present; check gateway logs |
+| `messages is not supported by vertex-ai` | Model name missing `anthropic.` prefix | Use `anthropic.claude-sonnet-5` not `claude-sonnet-5` when targeting Vertex AI |
+| `401 Unauthorized` from gateway | JWT invalid or missing claims | Decode the token (see below) and verify `portkey_oid` and `email_id` are present |
+| `Invalid API Key (Error Code: 03)` | Bearer token is a literal string, not an actual token | Use `$(./get-az-token.sh)` not `{./get-az-token.sh}` for command substitution |
 | Browser opens on every run | Azure CLI token cache expired | Normal — sign in; the cache is then reused for the token lifetime (~1 h) |
 | `az: command not found` | Azure CLI not installed | `brew install azure-cli` |
 | Gateway returns `502` / no route | No Portkey config header and no default config set | Set a default config in the AIGW control plane for your workspace |
+
+**Decode the token to inspect claims:**
+
+```sh
+echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+```
 
 ### Fixing AADSTS650057 on an existing app registration
 
