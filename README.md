@@ -126,3 +126,4 @@ The gateway is stateless. Redis is used only as a cache. Analytics and logs are 
 ## Guides
 
 - [EntraID (OIDC/JWT) authentication for Claude Desktop](docs/aigw-entraid-claude-jwt-auth.md)
+- [Claude Code CLI → Vertex AI via ADC](docs/claude-code-cli-vertex-adc-auth.md)
