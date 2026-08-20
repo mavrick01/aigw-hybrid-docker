@@ -1,0 +1,9 @@
+{
+  "apiKeyHelper": "/Users/mgollop/.claude/get-az-token.sh",
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8787",
+    "ENTRAID_CLIENT_ID": "9629c204-88db-4e7e-92a8-dda28e451409",
+    "ENTRAID_TENANT_ID": "934a04e7-6fbf-4142-83bc-4cecbacabbfb",
+    "ANTHROPIC_CUSTOM_HEADERS": "x-portkey-config: pc-vertex-bf0220"
+  }
+}

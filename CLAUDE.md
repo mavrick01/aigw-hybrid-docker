@@ -116,5 +116,7 @@ echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
 |---|---|
 | `docs/aigw-entraid-claude-jwt-auth.md` | End-to-end guide for EntraID OIDC/JWT auth with Claude Desktop |
 | `docs/claude-code-cli-entra-auth.md` | Guide for Claude Code CLI with EntraID JWT auth via `get-az-token.sh` |
+| `docs/claude-code-cli-vertex-adc-auth.md` | Guide for Claude Code CLI routing to Vertex AI (Anthropic Claude) through AIGW using Google ADC tokens |
+| `docs/gemini-cli-vertex-adc-auth.md` | Guide for Gemini CLI routing to Vertex AI (Gemini) through AIGW's `/v1/proxy` pass-through using Google ADC — native Vertex mode |
 | `Setup-EntraID-App.sh` | Interactive script that automates EntraID app registration and claims policy |
 | `get-az-token.sh` | `apiKeyHelper` script for Claude Code CLI — fetches EntraID access token via Azure CLI |
