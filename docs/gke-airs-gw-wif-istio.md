@@ -27,9 +27,9 @@ The GKE cluster must have:
 Set these once — all commands below reference them.
 
 ```sh
-export PROJECT_ID="mgollop-d974"
+export PROJECT_ID="<PROJECT_ID>"
 export CLUSTER_NAME="portkey-aigw-cluster"
-export REGION="us-central1"
+export REGION="<REGION>"
 export NAMESPACE="airs-gw"
 export GSA_NAME="portkey-gateway-sa"        # Google Service Account
 export KSA_NAME="gateway-sa"               # Kubernetes Service Account
