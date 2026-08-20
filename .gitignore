@@ -3,3 +3,12 @@
 *.key
 *.pfx
 .DS_Store
+
+gcp/*
+
+# Tofu / Terraform
+gcp/tofu/terraform.tfvars
+gcp/tofu/.terraform/
+gcp/tofu/.terraform.lock.hcl
+gcp/tofu/terraform.tfstate
+gcp/tofu/terraform.tfstate.backup

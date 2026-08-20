@@ -1,3 +1,7 @@
+images:
+  gatewayImage:
+    tag: "2.17.0"
+
 imageCredentials:
   - name: airsgatewayregistrycredentials
     create: true
@@ -5,15 +9,25 @@ imageCredentials:
     username: "${PORTKEY_REGISTRY_USERNAME}"
     password: "${PORTKEY_REGISTRY_PASSWORD}"
 
+serviceAccount:
+  create: true
+  automount: true
+  name: gateway-sa
+  annotations:
+    iam.gke.io/gcp-service-account: portkey-gateway-sa@mgollop-d974.iam.gserviceaccount.com
+
 environment:
   create: true
   secret: true
   data:
     PORTKEY_CLIENT_AUTH: "${PORTKEY_CLIENT_AUTH}"
     ORGANISATIONS_TO_SYNC: "${ORGANISATIONS_TO_SYNC}"
+    SERVICE_NAME: "${SERVICE_NAME}"
     PORT: "8787"
 
 service:
   type: LoadBalancer
   port: 80
   containerPort: 8787
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
