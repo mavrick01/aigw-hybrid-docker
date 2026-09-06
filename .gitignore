@@ -1,11 +1,16 @@
 .env
-*.pem
+x*.pem
 *.key
 *.pfx
 .DS_Store
+*.har
 
+.claude
+.vscode
 gcp/*
+gcp
 values-full.yml
+values-docker.yml
 
 # Tofu / Terraform
 gcp/tofu/terraform.tfvars
