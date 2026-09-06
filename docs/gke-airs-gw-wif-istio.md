@@ -4,6 +4,13 @@ Deploys the AIRS Gateway Helm chart onto an existing GKE cluster with:
 - **Workload Identity Federation (WIF)** — no service account keys; the pod impersonates a Google Service Account at runtime
 - **Istio service mesh** — Envoy sidecar, mTLS between services
 
+Two Istio installation options are covered:
+
+| Option | Who manages `istiod` | Recommended for |
+|---|---|---|
+| **Anthos Service Mesh (ASM)** | Google (managed) | Production GKE; no control-plane ops overhead |
+| **OSS Istio** | You | Non-GKE clusters, air-gapped, or when you need full control |
+
 ---
 
 ## Prerequisites
@@ -13,7 +20,7 @@ Deploys the AIRS Gateway Helm chart onto an existing GKE cluster with:
 | `gcloud` CLI | `brew install --cask google-cloud-sdk` |
 | `kubectl` | `brew install kubectl` |
 | `helm` (v3+) | `brew install helm` |
-| `istioctl` | `brew install istioctl` |
+| `istioctl` | `brew install istioctl` (OSS Istio only — not required for ASM) |
 
 The GKE cluster must have:
 - **Workload Identity** enabled (`--workload-pool=PROJECT_ID.svc.id.goog`)
@@ -166,11 +173,71 @@ kubectl get svc airs-gw -n $NAMESPACE
 
 ## 7. Install Istio
 
+Choose **one** of the two options below. The sidecar injection steps in section 8 differ slightly between them.
+
+---
+
+### Option A — Anthos Service Mesh (ASM) — recommended for GKE
+
+ASM is a Google-managed Istio distribution. Google operates the `istiod` control plane — you do not install, patch, or upgrade it yourself. `istioctl` is not required.
+
+#### 7A-1. Enable required APIs
+
+```sh
+gcloud services enable mesh.googleapis.com anthos.googleapis.com \
+  --project=$PROJECT_ID
+```
+
+#### 7A-2. Register the cluster to the GKE Fleet
+
+```sh
+gcloud container clusters update $CLUSTER_NAME \
+  --location=$REGION \
+  --fleet-project=$PROJECT_ID \
+  --project=$PROJECT_ID
+```
+
+#### 7A-3. Enable managed ASM
+
+```sh
+gcloud container fleet mesh enable --project=$PROJECT_ID
+
+gcloud container fleet mesh update \
+  --management automatic \
+  --memberships $CLUSTER_NAME \
+  --project=$PROJECT_ID \
+  --location=$REGION
+```
+
+#### 7A-4. Wait for the control plane to provision (~10–15 min)
+
+```sh
+watch -n 30 "gcloud container fleet mesh describe --project=$PROJECT_ID \
+  --format='yaml(membershipStates)'"
+```
+
+Both `controlPlaneManagement.state` and `dataPlaneManagement.state` must be `ACTIVE` before proceeding.
+
+#### 7A-5. Check ASM health at any time
+
+```sh
+gcloud container fleet mesh describe --project=$PROJECT_ID \
+  --format='yaml(membershipStates)'
+```
+
+---
+
+### Option B — OSS Istio (self-managed)
+
+Install the upstream open-source Istio control plane using `istioctl`. You are responsible for upgrades and security patches.
+
+#### 7B-1. Install Istio
+
 ```sh
 istioctl install --set profile=default -y
 ```
 
-Verify the control plane is up:
+#### 7B-2. Verify the control plane is up
 
 ```sh
 kubectl get pods -n istio-system
@@ -181,15 +248,35 @@ kubectl get pods -n istio-system
 
 ## 8. Enable sidecar injection
 
-Label the namespace so Istio automatically injects the Envoy sidecar into new pods:
+The namespace label and webhook differ between ASM and OSS Istio. Follow the section that matches your choice in step 7.
+
+---
+
+### Option A — ASM sidecar injection
+
+ASM uses a revision label (`istio.io/rev=asm-managed`) rather than the OSS `istio-injection` label. This tells the ASM mutating webhook — not the OSS one — to inject the Google-managed proxy.
+
+```sh
+# Remove OSS label if present
+kubectl label namespace $NAMESPACE istio-injection- --overwrite
+
+# Add ASM managed revision label
+kubectl label namespace $NAMESPACE istio.io/rev=asm-managed --overwrite
+```
+
+---
+
+### Option B — OSS Istio sidecar injection
 
 ```sh
 kubectl label namespace $NAMESPACE istio-injection=enabled
 ```
 
-### Exclude the GKE metadata server from Istio interception
+---
 
-The GKE metadata server (`169.254.169.254`) handles WIF token exchange. Istio's iptables rules would intercept these calls and break WIF, so it must be excluded:
+### Exclude the GKE metadata server from sidecar interception (both options)
+
+The GKE metadata server (`169.254.169.254`) handles WIF token exchange. The sidecar's iptables rules intercept outbound traffic by default and will break WIF unless this address is excluded:
 
 ```sh
 kubectl patch deployment airs-gw -n $NAMESPACE --type=json -p='[
@@ -215,16 +302,29 @@ kubectl rollout status deployment/airs-gw -n $NAMESPACE
 ```sh
 kubectl get pods -n $NAMESPACE
 # airs-gw pod should now show 2/2 READY (gateway + envoy sidecar)
+
+# ASM: sidecar image references gcr.io/gke-release/asm/...
+# OSS: sidecar image references docker.io/istio/proxyv2:...
+kubectl describe pod -n $NAMESPACE -l app=airs-gw | grep "Image:" | head -5
 ```
 
 ---
 
 ## 9. Verify end-to-end
 
-From the test VM or another pod in the VPC:
+The gateway's internal load balancer is only reachable from inside the VPC. The easiest way to test without a separate test VM is to use the IAP bastion (see `docs/gke-iap-bastion.md`):
 
 ```sh
-# Gateway internal LB IP
+gcloud compute ssh portkey-bastion \
+  --zone=us-central1-a \
+  --project=$PROJECT_ID \
+  --tunnel-through-iap
+```
+
+Then from the bastion shell:
+
+```sh
+# Resolve the gateway's internal LB IP
 GW_IP=$(kubectl get svc airs-gw -n $NAMESPACE \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
@@ -245,6 +345,8 @@ curl http://$GW_IP/v1/chat/completions \
   }'
 ```
 
+> The bastion is already inside the VPC so it reaches the internal LB (`10.0.0.x`) the same way a dedicated test VM would. No separate VM is needed.
+
 ---
 
 ## Architecture
@@ -258,6 +360,8 @@ Internal L4 NLB  (10.0.0.16:80)
     ▼
 airs-gw pod
   ├── istio-proxy (Envoy sidecar) — mTLS, observability
+  │     ASM:  Google-managed proxy (gcr.io/gke-release/asm/...)
+  │     OSS:  self-managed proxy   (docker.io/istio/proxyv2:...)
   └── airs-gw container (port 8787)
         │  WIF token exchange (via GKE metadata server, bypasses Envoy)
         ▼
@@ -281,3 +385,34 @@ helm upgrade airs-gw airs-gw/airs-gw \
 ```
 
 The deployment performs a rolling update — old pod stays up until the new one is healthy.
+
+---
+
+## Troubleshooting
+
+### WIF token exchange fails after enabling the sidecar
+
+Ensure the metadata server exclusion annotation is present on the pod:
+
+```sh
+kubectl get pod -n $NAMESPACE -l app=airs-gw \
+  -o jsonpath='{.items[0].metadata.annotations}'
+```
+
+`traffic.sidecar.istio.io/excludeOutboundIPRanges` must include `169.254.169.254/32`.
+
+### Checking ASM control plane health (ASM only)
+
+```sh
+gcloud container fleet mesh describe --project=$PROJECT_ID \
+  --format='yaml(membershipStates)'
+```
+
+Both `controlPlaneManagement.state` and `dataPlaneManagement.state` should be `ACTIVE`.
+
+### Checking OSS Istio control plane health (OSS only)
+
+```sh
+kubectl get pods -n istio-system
+istioctl proxy-status
+```

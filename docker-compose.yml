@@ -24,10 +24,17 @@ services:
     depends_on:
       aigw-redis:
         condition: service_healthy
+    volumes:
+      # Mount corporate CA cert so Node.js and the OS trust it
+      - ${HOME}/ca.crt:/etc/ssl/certs/corporate-ca.crt:ro
     environment:
       PORTKEY_CLIENT_AUTH: ${PORTKEY_CLIENT_AUTH}
       ORGANISATIONS_TO_SYNC: ${ORGANISATIONS_TO_SYNC}
       SERVICE_NAME: ${SERVICE_NAME}
+      # Corporate CA cert — makes Node.js trust the cert in addition to its
+      # built-in bundle (required when a TLS-inspecting firewall is in the path)
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/corporate-ca.crt
+      SSL_CERT_FILE: /etc/ssl/certs/corporate-ca.crt
       # LOGGING Controls
       ANALYTICS_STORE: control_plane
       LOG_STORE: control_plane

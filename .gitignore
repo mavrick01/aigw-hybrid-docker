@@ -5,6 +5,7 @@
 .DS_Store
 
 gcp/*
+values-full.yml
 
 # Tofu / Terraform
 gcp/tofu/terraform.tfvars
