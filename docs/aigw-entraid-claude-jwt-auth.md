@@ -13,7 +13,7 @@ Configures Claude Desktop to authenticate against this self-hosted AIGW Gateway 
 ## 1. Enable the Developer menu in Claude Desktop
 
 The 3rd-party provider / OIDC configuration UI referenced in step 6 lives behind Claude Desktop's Developer menu, which is hidden by default. Enable it before continuing (Help → Troubleshooting → Enable Developer Mode, or the equivalent toggle for your Claude Desktop version).
-![Help → Troubleshooting → Enable Developer Mode](./Enable%20Developer%20Mode.png)
+![Help → Troubleshooting → Enable Developer Mode](./images/Enable%20Developer%20Mode.png)
 
 ## 2. Register the application in EntraID
 
@@ -22,15 +22,15 @@ In the [Entra Admin Center](https://entra.microsoft.com):
 
 1. Register a new application (App registrations → New registration).
 
-<img src="./App-Registration.png" alt="EntraID->App Registration" width="380">
+<img src="./images/App-Registration.png" alt="EntraID->App Registration" width="380">
 
 2. Add a redirect URI for the **loopback port Claude Desktop will use** — see step 6 (`http://localhost:8080` in this example).
 
-<img src="./App-Configuration.png" alt="EntraID->App Configuration" width="600">
+<img src="./images/App-Configuration.png" alt="EntraID->App Configuration" width="600">
 
 3. Note the **Application (client) ID** and the **Application tenant ID** (You will use it as the **OIDC Issuer URL**`https://login.microsoftonline.com/<tenant-id>/v2.0`) — both are needed in step 6.
 
-![App-Details](./App-Details.png)
+![App-Details](./images/App-Details.png)
 
 4. **Set the token version to v2.** In the app **Manifest** tab, confirm `"accessTokenAcceptedVersion"` is `2`, or patch it via Graph API:
 
@@ -272,7 +272,7 @@ In the AIGW control plane, add an integration for `@vertex` and select the model
 
 ## 5. Enable JWT Authentication
 Enable JST Authentication and point it at your EntraID App (replace the tenant ID with your tenant ID). The patching earlier to v2, is due to the URL checking the v2.0 keys.
-![Enable JWT Authentication](./JWT-Auth.png)
+![Enable JWT Authentication](./images/JWT-Auth.png)
 
 ## 6. Create a AIGW config
 
