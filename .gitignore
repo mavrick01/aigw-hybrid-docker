@@ -11,6 +11,7 @@ gcp/*
 gcp
 values-full.yml
 values-docker.yml
+gateway.log
 
 # Tofu / Terraform
 gcp/tofu/terraform.tfvars
