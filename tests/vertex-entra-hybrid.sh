@@ -10,14 +10,14 @@ echo "VERTEX TEST"
 echo "==========="
 echo "Using model: $MODEL"
 
-curl -k https:///localhost:18787/v1/chat/completions \
+curl -k https://localhost:18787/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
       "model": "'"$MODEL"'",
       "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the tallest mountain in Victoria,Australia"}
+        {"role": "user", "content": "What is the tallest mountain in Tasmania,Australia"}
       ],
       "max_tokens": 512
     }'

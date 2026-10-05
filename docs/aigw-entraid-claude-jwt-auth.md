@@ -114,11 +114,11 @@ Add the claims the gateway needs as **Additional claims** (use **+ Add new claim
 
 ### Group-based claim values (multi-team / multi-workspace)
 
-If different teams need different values — different workspaces, or extra metadata — don't hardcode a single value. Instead, add **claim conditions** scoped to a group, with a distinct value per group. For example, a `metadata` claim that varies by team:
+If different teams need different workspaces, don't hardcode a single `portkey_workspace` value. Instead, add **claim conditions** scoped to a group, with a distinct value per group:
 
-![Group Mapping](./images/17%20Group%20Mapping.png)
+![Group Mapping](./images/17%20Group%20Mapping%20Workspace.png)
 
-With this in place, the same claim resolves differently depending on which group signs in — this is how `portkey_workspace` itself can also be made group-dependent for a multi-workspace deployment: add one claim condition row per group, each with its own value, instead of a single static value in the table above.
+With this in place, the same claim resolves differently depending on which group signs in — add one claim condition row per group, each with its own `portkey_workspace` value, instead of a single static value in the table above. This is the alternative to the SCIM-based group-to-workspace mapping mentioned above, for deployments that would rather drive workspace assignment directly from the EntraID claim.
 
 Click **Save**.
 
