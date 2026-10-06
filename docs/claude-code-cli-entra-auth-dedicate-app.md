@@ -213,6 +213,9 @@ Edit (or create) `~/.claude/settings.json`:
 
 > **Tip:** If you have `ENTRAID_CLIENT_ID` and `ENTRAID_TENANT_ID` in your shell environment already (e.g. via `direnv`), you can omit those two from the `env` block and the script will pick them up directly. The model vars should always be set explicitly when using this config.
 
+>  Alternatively if you do not want to use the script, you can call `az account get-access-token --resource <ENTRAID_CLIENT_ID> --tenant <ENTRAID_TENANT_ID> --query   "accessToken" -o tsv` as the `apiKeyHelper` directly 
+
+
 ### Project-level config (recommended when mixing auth methods)
 
 If you use a different Claude Code config for other repos (e.g. a direct Portkey cloud setup), put the gateway settings in a **project-level** `.claude/settings.json` at the root of this repo instead of the global `~/.claude/settings.json`. Claude Code merges the two — project settings override global ones for the same keys — so your global config stays intact for everything else:
@@ -253,7 +256,6 @@ Before starting Claude Code, confirm the token and gateway are working end-to-en
 ```sh
 TOKEN=$(./get-az-token.sh) && \
 curl http://127.0.0.1:8787/v1/messages \
-  -H "x-portkey-config: <your-config-id>" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"model": "anthropic.claude-sonnet-5", "max_tokens": 250, "messages": [{"role": "user", "content": "hi"}]}'
