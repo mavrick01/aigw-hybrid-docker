@@ -27,6 +27,18 @@ cp .env.example .env
 
 ## Docker Compose
 
+The `docker/` directory holds three independent compose files, each its own
+optional group layered onto the shared `aigw-net` Docker network. Only the
+core stack is required; the other two are opt-in add-ons.
+
+| Group | File | Required? |
+|---|---|---|
+| Core gateway | `docker-compose.yml` | Yes |
+| Observability | `docker-compose.otel.yml` | No |
+| File-to-text webhook | `docker-compose.file-to-text.yml` | No |
+
+### Core gateway
+
 ```sh
 # Pull latest images and start
 docker compose pull && docker compose up -d
@@ -76,6 +88,41 @@ docker compose -f docker-compose.otel.yml down
 Config files live under `otel/`:
 - `otel/prometheus.yml` — scrape config
 - `otel/otel-collector-config.yaml` — OTLP receiver → Jaeger exporter pipeline
+
+---
+
+## File-to-text webhook
+
+`docker-compose.file-to-text.yml` is a separate, optional stack that adds the
+`file-to-text-webhook` service — a `before_request_hooks` guardrail that
+decodes file/document attachments (PDF, etc.) to plain text/Markdown before
+the request reaches the model. It builds from `../file-to-text-webhook` and
+joins the main stack via the shared `aigw-net` network, so the main stack
+must be started first.
+
+```sh
+# Start the main stack first (creates the shared network)
+docker compose up -d
+
+# Then start the webhook
+docker compose -f docker-compose.file-to-text.yml up -d --build
+
+# Stop it
+docker compose -f docker-compose.file-to-text.yml down
+```
+
+Health check: `curl http://127.0.0.1:3060/healthz`
+
+| Variable | Description |
+|---|---|
+| `DECODE_BACKEND` | `markitdown` (default, local) or `model` (asks the target model to transcribe) |
+| `INTERNAL_GATEWAY_API_KEY` | Service credential for the webhook's own callback to the gateway when using the `model` backend |
+| `DOCINTEL_ENDPOINT` | Optional Azure AI Document Intelligence endpoint, for PDFs `pdfminer` can't parse |
+| `AZURE_API_KEY` | Key for the Azure Document Intelligence resource above |
+
+See [file-to-text-webhook/README.md](file-to-text-webhook/README.md) for the
+full pipeline, wiring it into the gateway as a guardrail, and PDF extraction
+details.
 
 ---
 

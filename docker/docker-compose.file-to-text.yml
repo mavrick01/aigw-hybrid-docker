@@ -1,0 +1,31 @@
+networks:
+  aigw-net:
+    name: aigw-net
+
+services:
+  file-to-text-webhook:
+      build: ../file-to-text-webhook
+      container_name: file-to-text-webhook
+      restart: unless-stopped
+      environment:
+        # Which decoder to try first for an attachment: "markitdown" (default) is
+        # cheap/local and tried first; "model" asks the request's own target
+        # model to transcribe it to Markdown instead (costs a second LLM call).
+        # Either way the other is used as a fallback. Overridable per-request
+        # via the x-decode-backend header.
+        DECODE_BACKEND: ${DECODE_BACKEND:-markitdown}
+        # Service credential for this webhook's own callback to the gateway when
+        # using the "model" decode backend. The gateway's forwardHeaders blocks
+        # relaying the caller's own Authorization header to webhook guardrails
+        # (prevents credential leakage to arbitrary webhook URLs), so this must
+        # be a separate key, not the end user's token.
+        INTERNAL_GATEWAY_API_KEY: ${INTERNAL_GATEWAY_API_KEY:-}
+        # Optional: Azure AI Document Intelligence backend for MarkItDown,
+        # handles scanned/embedded-font PDFs that the default pdfminer backend
+        # garbles. Leave unset to use the default (pdfminer) backend.
+        DOCINTEL_ENDPOINT: ${DOCINTEL_ENDPOINT:-}
+        AZURE_API_KEY: ${AZURE_API_KEY:-}
+      ports:
+        - "3060:3060"
+      networks:
+        - aigw-net

@@ -1,7 +1,12 @@
 #! /bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -a
+source "$SCRIPT_DIR/.env"
+set +a
+
 # Fetch the token
-TOKEN=$(az account get-access-token --resource c5490456-8e83-4df6-a979-9ed2b4dd84a5 --tenant 934a04e7-6fbf-4142-83bc-4cecbacabbfb --query   "accessToken" -o tsv)
+TOKEN=$(az account get-access-token --resource ${AZURE_JWT_RESOURCE} --tenant ${AZURE_JWT_DIRECTORY} --query   "accessToken" -o tsv)
 
 # Use the first argument ($1) if provided, otherwise default to Sonnet
 MODEL="${1:-@vertex/anthropic.claude-sonnet-5}"
@@ -17,7 +22,7 @@ curl -k https://aigw.portkey.ai/v1/chat/completions \
       "model": "'"$MODEL"'",
       "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the tallest mountain in Queensland,Australia"}
+        {"role": "user", "content": "What is the tallest mountain in tasmania,Australia"}
       ],
       "max_tokens": 512
     }'

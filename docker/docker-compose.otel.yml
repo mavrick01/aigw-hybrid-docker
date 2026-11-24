@@ -20,6 +20,8 @@ services:
     container_name: otel-collector
     restart: unless-stopped
     command: ["--config=/etc/otel-collector-config.yaml"]
+    env_file:
+      - .env
     volumes:
       - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     depends_on:

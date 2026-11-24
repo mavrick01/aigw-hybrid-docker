@@ -5,4 +5,4 @@ scrape_configs:
   - job_name: portkey-gateway
     metrics_path: /metrics
     static_configs:
-      - targets: ["portkey-gateway:8787"]
+      - targets: ["aigw-gateway:8787"]

@@ -21,3 +21,5 @@ gcp/tofu/.terraform/
 gcp/tofu/.terraform.lock.hcl
 gcp/tofu/terraform.tfstate
 gcp/tofu/terraform.tfstate.backup
+
+tests/entra/

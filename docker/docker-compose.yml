@@ -4,7 +4,7 @@ networks:
 
 services:
   aigw-redis:
-    image: redis:7.2-alpine
+    image: redis:alpine
     container_name: aigw-redis
     restart: unless-stopped
     healthcheck:
@@ -51,6 +51,10 @@ services:
       # REDIT Controls
       CACHE_STORE: redis
       REDIS_URL: redis://aigw-redis:6379
+      # AIRS Runtime Endpoint
+      # US: Default so not required
+      # Singapore:
+      # AIRS_URL: https://service-sg.api.aisecurity.paloaltonetworks.com
       # AIRS/Strata management plane (defaults in the image still point at the
       # legacy pre-acquisition control plane, which rejects Strata-issued tokens)
       ALBUS_BASEPATH: https://mp.us.prod.airs-gw.portkey.ai/api
@@ -60,7 +64,7 @@ services:
       LOG_LEVEL: DEBUG
       # JWT settings
       JWT_ENABLED: ON
-      JWT_LOCAL_AUTH_DEFAULT_SCOPES: completions.write,mcp.invoke
+      JWT_LOCAL_AUTH_DEFAULT_SCOPES: completions.write,mcp.invoke,virtual_keys.list
       # JWT_LOCAL_AUTH_WORKSPACE_ALLOWLIST: "ws-marc2-3c7e6f,ws-marc-w-2bfa39,ws-main-a-997260,Main_workspace"
       # JWT_LOCAL_AUTH_DEFAULT_WORKSPACE: "ws-main-a-997260"
       # OTEL settings
@@ -69,9 +73,11 @@ services:
       EXPERIMENTAL_GEN_AI_OTEL_TRACES_ENABLED: true
       EXPERIMENTAL_GEN_AI_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
       # LOCAL HOST ACCESS
-      TRUSTED_CUSTOM_HOSTS: "localhost,127.0.0.1,::1,minio,otel-collector,aigw-redis,host.docker.internal,aigw.sase-au.io"
+      TRUSTED_CUSTOM_HOSTS: "localhost,127.0.0.1,::1,minio,otel-collector,aigw-redis,file-to-text-webhook,host.docker.internal,aigw.sase-au.io"
     ports:
       - "8787:8787"
       - "8788:8788"
     networks:
       - aigw-net
+
+  

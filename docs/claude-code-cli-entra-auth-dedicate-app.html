@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>claude-code-cli-entra-auth-dedicate-app.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="claude-code-cli--entraid-jwt-authentication-via-aigw">Claude Code CLI — EntraID JWT Authentication via AIGW</h1>
+<blockquote>
+<p><strong>Version 2.</strong> This guide supersedes the previous revision of this document. If you configured the app registration against an earlier version of this guide, work through the setup steps below in full before retrying — the claims configuration surface has changed and the two approaches should not be mixed.</p>
+</blockquote>
+<p>Configures the Claude Code CLI to send requests through this self-hosted AIGW gateway (although this process works with the SaaS AIGW offering too), authenticated using a Microsoft EntraID JWT bearer token obtained automatically from the local Azure CLI session. User and workspace assignment is driven entirely by <strong>Entra security groups</strong>, so adding or moving a user is a group-membership change — no per-user policy edits.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>Claude Code CLI supports an <code>apiKeyHelper</code> — a script it calls on each session start whose stdout becomes the bearer token sent to the gateway. <code>get-az-token.sh</code> in this repo fills that role: it fetches an EntraID access token from the local Azure CLI cache, triggering an interactive browser login if the session has expired.</p>
+<pre class="hljs"><code><div>Claude Code CLI
+    │
+    ├── calls get-az-token.sh → outputs EntraID access token
+    │
+    └── sends requests to AIGW gateway (http://localhost:8787)
+            Authorization: Bearer &lt;token&gt;
+            │
+            └── gateway validates JWT, maps claims → Portkey workspace
+</div></code></pre>
+<p>Unlike an interactive OIDC flow, the Azure CLI requests an <strong>access token for a resource</strong>, not an ID token — which means the app registration must additionally expose an API and pre-authorize the Azure CLI as a client (steps 6–7 below).</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>This repo's <code>docker-compose.yml</code> stack running
+<ul>
+<li><code>JWT_ENABLED: ON</code></li>
+</ul>
+</li>
+<li>An EntraID tenant with permissions to register applications and manage Enterprise Application properties (Application Administrator or Cloud Application Administrator)</li>
+<li><code>openssl</code> installed locally (for generating the token-signing certificate in step 2)</li>
+<li>Azure CLI installed (<code>brew install azure-cli</code>) and logged in at least once</li>
+</ul>
+<h2 id="1-register-the-application">1. Register the application</h2>
+<p>In the <a href="https://entra.microsoft.com">Entra Admin Center</a>, go to <strong>App registrations → New registration</strong>.</p>
+<p><img src="./images/1. Azure EntraID App Registration.png" alt="App registrations"></p>
+<ul>
+<li><strong>Name</strong>: something identifiable, e.g. <code>aigw-jwt-app</code></li>
+<li><strong>Supported account types</strong>: Single tenant</li>
+<li><strong>Redirect URI</strong>: not required for the CLI token flow — leave blank unless you also plan to use this app registration for an interactive OIDC client</li>
+</ul>
+<img src="./images/2%20New%20App.png" alt="Register an application" width="600">
+<p>Note the <strong>Application (client) ID</strong> and <strong>Directory (tenant) ID</strong> from the app's Overview page — both are needed throughout this guide.</p>
+<h2 id="2-generate-and-upload-a-token-signing-certificate">2. Generate and upload a token-signing certificate</h2>
+<p>Customizing claims on this app (step 5) requires a certificate — Entra signs tokens with a custom key once you add custom claims, instead of the default Microsoft key. Generate a self-signed certificate and upload the public half:</p>
+<pre class="hljs"><code><div>openssl req -x509 -newkey rsa:2048 \
+  -keyout key.pem -out cert.pem \
+  -days 365 -nodes \
+  -subj <span class="hljs-string">&quot;/CN=PortkeyTokenSigningKey&quot;</span>
+</div></code></pre>
+<p>In <strong>App registrations → your app → Certificates &amp; secrets → Certificates → Upload certificate</strong>, upload <code>cert.pem</code> (the public key only — never upload or share <code>key.pem</code>).</p>
+<p><img src="./images/4 Upload Certificate.png" alt="Upload certificate"></p>
+<p><img src="./images/5 Certificate Added.png" alt="Certificate added"></p>
+<p>Keep <code>key.pem</code> safe — treat it like any other private key material. It is not consumed by the gateway or by Claude; it only needs to exist so the certificate it backs is valid.</p>
+<h2 id="3-patch-the-manifest">3. Patch the manifest</h2>
+<p>In the app's <strong>Manifest</strong> tab, set two fields under <code>&quot;api&quot;</code>:</p>
+<pre class="hljs"><code><div><span class="hljs-attr">&quot;api&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;acceptMappedClaims&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;requestedAccessTokenVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2</span><span class="hljs-punctuation">,</span>
+  ...
+<span class="hljs-punctuation">}</span>
+</div></code></pre>
+<p><img src="./images/6 Manifest Change acceptedMappedClaims.png" alt="acceptMappedClaims"></p>
+<p><img src="./images/7 Manifest Change reqeuestedAccessTokenVersion.png" alt="requestedAccessTokenVersion"></p>
+<ul>
+<li><code>requestedAccessTokenVersion: 2</code> — without this, EntraID issues v1.0 tokens, which <code>acceptMappedClaims</code> and the audience checks below do not expect.</li>
+<li><code>acceptMappedClaims: true</code> — required for the app to emit the custom claims configured in step 5.</li>
+</ul>
+<p>Click <strong>Save</strong>.</p>
+<h2 id="4-restrict-and-assign-access-via-the-enterprise-application">4. Restrict and assign access via the Enterprise Application</h2>
+<p>In the <a href="https://entra.microsoft.com">Entra Admin Center</a>, go to <strong>Enterprise applications → All applications</strong> and search for your app by name — the App Registration above automatically has a matching Enterprise Application (service principal).</p>
+<p><img src="./images/11 Enterprise App - Choose App.png" alt="Enterprise App - Choose App"></p>
+<h3 id="4a-require-assignment">4a. Require assignment</h3>
+<p>Under <strong>Properties</strong>, set <strong>Assignment required?</strong> to <strong>Yes</strong>. This is what makes group membership meaningful — without it, any user in the tenant can sign in and get a token regardless of group assignment below.</p>
+<p><img src="./images/21 Assignment Required.png" alt="Assignment Required"></p>
+<h3 id="4b-assign-the-groups-that-should-have-access">4b. Assign the groups that should have access</h3>
+<p>Under <strong>Users and groups → Add user/group</strong>, assign the security group(s) whose members should be able to use this gateway (e.g. <code>AIRS Group</code>). Only members of an assigned group can sign in once assignment is required.</p>
+<p><img src="./images/12 Users and Groups.png" alt="Users and groups"></p>
+<p><img src="./images/13 Add Group.png" alt="Add Group"></p>
+<blockquote>
+<p><strong>Onboarding a new user</strong>: add them to the appropriate Entra group. No app registration change, no policy edit, no restart — their next token pulls access and claims automatically. This is the mechanism for allocating users &quot;on the fly.&quot;</p>
+</blockquote>
+<h2 id="5-configure-claims">5. Configure claims</h2>
+<p>Still on the Enterprise Application, go to <strong>Single sign-on → OIDC-based Sign-on → Attributes &amp; Claims → Edit</strong>.</p>
+<p><img src="./images/14 Attributes and Claims.png" alt="Attributes and Claims"></p>
+<p>Add the claims the gateway needs as <strong>Additional claims</strong> (use <strong>+ Add new claim</strong>, source = typed constant value, not an attribute):</p>
+<table>
+<thead>
+<tr>
+<th>Claim name</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>portkey_oid</code></td>
+<td>Your deployment's <code>ORGANISATIONS_TO_SYNC</code> UUID</td>
+<td>Org routing — the gateway rejects tokens missing this</td>
+</tr>
+<tr>
+<td><code>portkey_workspace</code></td>
+<td>A workspace slug, e.g. <code>ws-main-a-997260</code></td>
+<td>Workspace routing</td>
+</tr>
+<tr>
+<td><code>scopes</code></td>
+<td>e.g. <code>completions.write</code></td>
+<td>Overrides <code>JWT_LOCAL_AUTH_DEFAULT_SCOPES</code> explicitly</td>
+</tr>
+</tbody>
+</table>
+<p><img src="./images/16 Add Required Claims.png" alt="Add Required Claims"></p>
+<p><strong>NOTE:</strong> You can choose to leave out <code>portkey_workspace</code> and leverage SCIM group assignment to allocate the workspace instead. Upon authentication the gateway will scan for valid users based on the UPN or email and assign them to the appropriate workspace.</p>
+<h3 id="group-based-claim-values-multi-team--multi-workspace">Group-based claim values (multi-team / multi-workspace)</h3>
+<p>If different teams need different values — different workspaces, or extra metadata — don't hardcode a single value. Instead, add <strong>claim conditions</strong> scoped to a group, with a distinct value per group. For example, a <code>metadata</code> claim that varies by team:</p>
+<p><img src="./images/17 Group Mapping.png" alt="Group Mapping"></p>
+<p>With this in place, the same claim resolves differently depending on which group signs in — this is how <code>portkey_workspace</code> itself can also be made group-dependent for a multi-workspace deployment: add one claim condition row per group, each with its own value, instead of a single static value in the table above.</p>
+<p>Click <strong>Save</strong>.</p>
+<h2 id="6-expose-an-api">6. Expose an API</h2>
+<p>The Azure CLI requests a token <em>for</em> this app as a resource, which requires the app to expose an API. In <strong>App registrations → your app → Expose an API</strong>, set the <strong>Application ID URI</strong> to the default suggested value (<code>api://&lt;client-id&gt;</code>):</p>
+<p><img src="./images/8 Expose an API - add.png" alt="Expose an API"></p>
+<p>Add a scope:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scope name</td>
+<td><code>user_impersonation</code></td>
+</tr>
+<tr>
+<td>Who can consent</td>
+<td>Admins and users</td>
+</tr>
+<tr>
+<td>Admin consent display name</td>
+<td><code>Access AIGW gateway</code></td>
+</tr>
+<tr>
+<td>Admin consent description</td>
+<td><code>Access the AIGW gateway on behalf of the signed-in user.</code></td>
+</tr>
+<tr>
+<td>User consent display name</td>
+<td><code>Access AIGW gateway</code></td>
+</tr>
+<tr>
+<td>User consent description</td>
+<td><code>Access the AIGW gateway on your behalf.</code></td>
+</tr>
+<tr>
+<td>State</td>
+<td>Enabled</td>
+</tr>
+</tbody>
+</table>
+<p><img src="./images/9 Add user_impersonation Scope.png" alt="Add user_impersonation Scope"></p>
+<h2 id="7-pre-authorize-the-azure-cli">7. Pre-authorize the Azure CLI</h2>
+<p>Still on <strong>Expose an API</strong>, under <strong>Authorized client applications → Add a client application</strong>, add the Azure CLI's well-known client ID (<code>04b07795-8ddb-461a-bbee-02f9e1bf7b46</code>) and check the <code>user_impersonation</code> scope:</p>
+<p><img src="./images/10 Add Client Application.png" alt="Add Client Application"></p>
+<p>Without this step, <code>az account get-access-token</code>/<code>az login --scope</code> fails with <code>AADSTS650057</code> (if the API isn't exposed yet) or <code>AADSTS65001</code> (if the Azure CLI isn't pre-authorized).</p>
+<blockquote>
+<p><strong>Note on audience:</strong> <code>acceptMappedClaims</code> requires the token audience to be the bare application GUID. Always use the client ID (e.g. <code>c5490456-...</code>) as the resource when calling <code>az account get-access-token</code> — not the <code>api://</code> URI form. Using the URI form triggers <code>AADSTS501461</code>.</p>
+</blockquote>
+<h2 id="8-get-the-application-client-id">8. Get the Application (client) ID</h2>
+<p>From either the App Registration's Overview or the Enterprise Application's Overview — they share the same <strong>Application ID</strong>.</p>
+<p><img src="./images/18 Client ID.png" alt="Client ID"></p>
+<h2 id="9-install-the-token-helper-script">9. Install the token helper script</h2>
+<p>Copy <code>get-az-token.sh</code> from this repo to your Claude config directory:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cp</span> get-az-token.sh ~/.claude/get-az-token.sh
+<span class="hljs-built_in">chmod</span> +x ~/.claude/get-az-token.sh
+</div></code></pre>
+<p>The script reads <code>ENTRAID_CLIENT_ID</code> and <code>ENTRAID_TENANT_ID</code> from the environment. Supply them via the <code>env</code> block in Claude Code's settings (step 10) — that is the recommended approach and no other configuration file is needed.</p>
+<h2 id="10-configure-claude-code-cli">10. Configure Claude Code CLI</h2>
+<p>Edit (or create) <code>~/.claude/settings.json</code>:</p>
+<pre class="hljs"><code><div><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;apiKeyHelper&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/Users/&lt;you&gt;/.claude/get-az-token.sh&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8787&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ENTRAID_CLIENT_ID&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;&lt;your-app-client-id&gt;&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ENTRAID_TENANT_ID&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;&lt;your-tenant-id&gt;&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_SONNET_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-sonnet-5&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_OPUS_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-opus-4-8&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_HAIKU_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-haiku-4-5-20251001&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;CLAUDE_CODE_API_KEY_HELPER_TTL_MS&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;3000000&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</div></code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiKeyHelper</code></td>
+<td>Absolute path to <code>get-az-token.sh</code></td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_BASE_URL</code></td>
+<td>Your gateway URL — use <code>http://localhost:8787</code> for local Docker</td>
+</tr>
+<tr>
+<td><code>ENTRAID_CLIENT_ID</code></td>
+<td>The Application (client) ID from the EntraID app registration</td>
+</tr>
+<tr>
+<td><code>ENTRAID_TENANT_ID</code></td>
+<td>Your Entra tenant ID</td>
+</tr>
+<tr>
+<td><code>ENTRAID_RESOURCE_URI</code></td>
+<td><em>(optional)</em> Resource to request a token for — defaults to the bare <code>ENTRAID_CLIENT_ID</code> GUID. Override only if you have a reason to deviate; do not set it to the <code>api://</code> URI form (see the audience note above).</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_DEFAULT_SONNET_MODEL</code></td>
+<td>Model ID Claude Code uses for Sonnet requests — must include the <code>anthropic.</code> prefix when routing via Vertex AI</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_DEFAULT_OPUS_MODEL</code></td>
+<td>Model ID for Opus requests — same prefix requirement</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_DEFAULT_HAIKU_MODEL</code></td>
+<td>Model ID for Haiku requests — same prefix requirement</td>
+</tr>
+<tr>
+<td><code>CLAUDE_CODE_API_KEY_HELPER_TTL_MS</code></td>
+<td>How long (ms) Claude Code caches the token from <code>apiKeyHelper</code> — set to <code>3000000</code> (~50 min) to match the Azure CLI token lifetime and avoid unnecessary re-fetches</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tip:</strong> If you have <code>ENTRAID_CLIENT_ID</code> and <code>ENTRAID_TENANT_ID</code> in your shell environment already (e.g. via <code>direnv</code>), you can omit those two from the <code>env</code> block and the script will pick them up directly. The model vars should always be set explicitly when using this config.</p>
+</blockquote>
+<blockquote>
+<p>Alternatively if you do not want to use the script, you can call <code>az account get-access-token --resource &lt;ENTRAID_CLIENT_ID&gt; --tenant &lt;ENTRAID_TENANT_ID&gt; --query   &quot;accessToken&quot; -o tsv</code> as the <code>apiKeyHelper</code> directly</p>
+</blockquote>
+<h3 id="project-level-config-recommended-when-mixing-auth-methods">Project-level config (recommended when mixing auth methods)</h3>
+<p>If you use a different Claude Code config for other repos (e.g. a direct Portkey cloud setup), put the gateway settings in a <strong>project-level</strong> <code>.claude/settings.json</code> at the root of this repo instead of the global <code>~/.claude/settings.json</code>. Claude Code merges the two — project settings override global ones for the same keys — so your global config stays intact for everything else:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">mkdir</span> -p .claude
+<span class="hljs-comment"># create .claude/settings.json with only the gateway-specific overrides</span>
+</div></code></pre>
+<pre class="hljs"><code><div><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;apiKeyHelper&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;/Users/&lt;you&gt;/.claude/get-az-token.sh&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8787&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ENTRAID_CLIENT_ID&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;&lt;your-app-client-id&gt;&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ENTRAID_TENANT_ID&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;&lt;your-tenant-id&gt;&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_CUSTOM_HEADERS&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;x-portkey-config: &lt;your-config-id&gt;&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_SONNET_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-sonnet-5&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_OPUS_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-opus-4-8&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ANTHROPIC_DEFAULT_HAIKU_MODEL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;anthropic.claude-haiku-4-5-20251001&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;CLAUDE_CODE_API_KEY_HELPER_TTL_MS&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;3000000&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</div></code></pre>
+<p>Theme, permissions, and any other global settings are inherited automatically.</p>
+<h2 id="11-set-the-portkey-config-header-optional">11. Set the Portkey config header (optional)</h2>
+<p>If your gateway requires an explicit routing config (the <code>x-portkey-config</code> header), the recommended approach is to configure a <strong>default config</strong> in the AIGW control plane for your workspace — the gateway then applies it to all requests that don't carry the header explicitly.</p>
+<p>Alternatively, you can set it per-project in <code>.claude/settings.json</code> at the repo level if Claude Code CLI adds support for custom request headers in your version.</p>
+<h2 id="12-verify-with-curl">12. Verify with curl</h2>
+<p>Before starting Claude Code, confirm the token and gateway are working end-to-end:</p>
+<pre class="hljs"><code><div>TOKEN=$(./get-az-token.sh) &amp;&amp; \
+curl http://127.0.0.1:8787/v1/messages \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$TOKEN</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;model&quot;: &quot;anthropic.claude-sonnet-5&quot;, &quot;max_tokens&quot;: 250, &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;hi&quot;}]}&#x27;</span>
+</div></code></pre>
+<blockquote>
+<p><strong>Model prefix</strong>: when routing via Vertex AI, model names must be prefixed with <code>anthropic.</code> (e.g. <code>anthropic.claude-sonnet-5</code>). Without the prefix the gateway returns <code>messages is not supported by vertex-ai</code>.</p>
+</blockquote>
+<p>If the request succeeds, inspect the token claims to verify the gateway claims are correct:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">echo</span> <span class="hljs-variable">$TOKEN</span> | <span class="hljs-built_in">cut</span> -d. -f2 | <span class="hljs-built_in">base64</span> -d 2&gt;/dev/null | python3 -m json.tool
+</div></code></pre>
+<p>Check that <code>portkey_oid</code>, <code>portkey_workspace</code> (if used), and <code>scopes</code> are present and match what you configured in step 5. For reference, here's a decoded token showing these claims, alongside a second user in a different group picking up different values automatically:</p>
+<p><img src="./images/19 JWT Decoded.png" alt="JWT Decoded"></p>
+<p><img src="./images/20 JWT Alternative Login.png" alt="JWT from a different group"></p>
+<h2 id="13-start-claude-code">13. Start Claude Code</h2>
+<pre class="hljs"><code><div>claude
+</div></code></pre>
+<p>On the first run (or after your Azure CLI session expires) a browser window opens to sign in to EntraID. After authentication the session is cached by the Azure CLI — subsequent invocations are silent until the token expires.</p>
+<p>To confirm requests are landing in the gateway, check the control plane logs or AIGW analytics for your workspace.</p>
+<h2 id="onboarding-a-new-user">Onboarding a new user</h2>
+<p>Add them to the Entra group assigned to the app's Enterprise Application (step 4b). No change is needed here — their next <code>get-az-token.sh</code> run picks up membership, access, and the correct claims automatically.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AADSTS650057: Invalid resource</code></td>
+<td>App not exposed as an API</td>
+<td>Complete step 6 — &quot;Expose an API&quot;</td>
+</tr>
+<tr>
+<td><code>AADSTS65001: consent required</code></td>
+<td>Azure CLI not pre-authorized on the resource app</td>
+<td>Complete step 7 — &quot;Pre-authorize the Azure CLI&quot;</td>
+</tr>
+<tr>
+<td><code>AADSTS501461: AcceptMappedClaims...</code></td>
+<td>Resource was requested as <code>api://&lt;id&gt;</code> instead of the bare GUID</td>
+<td><code>ENTRAID_RESOURCE_URI</code> must be the bare client GUID, not the <code>api://</code> URI — check the <code>env</code> block in <code>settings.json</code></td>
+</tr>
+<tr>
+<td>Token has no <code>portkey_workspace</code> / wrong workspace</td>
+<td>User isn't in a group matched by a claim condition</td>
+<td>Add the user to the right group (step 4b / step 5)</td>
+</tr>
+<tr>
+<td>User can't sign in at all</td>
+<td><strong>Assignment required?</strong> is <code>Yes</code> but the user isn't in an assigned group</td>
+<td>Assign their group under Enterprise Application → Users and groups (step 4)</td>
+</tr>
+<tr>
+<td>Claims don't appear in the token</td>
+<td>Claims added under the App Registration's <strong>Token configuration</strong> tab instead of the Enterprise Application</td>
+<td>Configure claims under <strong>Enterprise Applications → your app → Single sign-on → Attributes &amp; Claims</strong> (step 5) — only this system supports the group-conditioned values used here</td>
+</tr>
+<tr>
+<td><code>ENTRAID_CLIENT_ID not set</code></td>
+<td>Variable not in the <code>env</code> block</td>
+<td>Add it to the <code>env</code> block in <code>settings.json</code></td>
+</tr>
+<tr>
+<td><code>messages is not supported by vertex-ai</code></td>
+<td>Model name missing <code>anthropic.</code> prefix</td>
+<td>Use <code>anthropic.claude-sonnet-5</code> not <code>claude-sonnet-5</code> when targeting Vertex AI</td>
+</tr>
+<tr>
+<td>API errors after copying entra config to global <code>settings.json</code></td>
+<td>Model env vars absent — Claude Code defaults to bare model names without the <code>anthropic.</code> prefix</td>
+<td>Add <code>ANTHROPIC_DEFAULT_SONNET_MODEL</code>, <code>ANTHROPIC_DEFAULT_OPUS_MODEL</code>, and <code>ANTHROPIC_DEFAULT_HAIKU_MODEL</code> with the <code>anthropic.</code> prefix to the <code>env</code> block</td>
+</tr>
+<tr>
+<td><code>401 Unauthorized</code> from gateway</td>
+<td>JWT invalid or missing claims</td>
+<td>Decode the token (see below) and verify <code>portkey_oid</code> and <code>scopes</code> are present</td>
+</tr>
+<tr>
+<td><code>Invalid API Key (Error Code: 03)</code></td>
+<td>Bearer token is a literal string, not an actual token</td>
+<td>Use <code>$(./get-az-token.sh)</code> not <code>{./get-az-token.sh}</code> for command substitution</td>
+</tr>
+<tr>
+<td>Browser opens on every run</td>
+<td>Azure CLI token cache expired</td>
+<td>Normal — sign in; the cache is then reused for the token lifetime (~1 h)</td>
+</tr>
+<tr>
+<td><code>az: command not found</code></td>
+<td>Azure CLI not installed</td>
+<td><code>brew install azure-cli</code></td>
+</tr>
+<tr>
+<td>Gateway returns <code>502</code> / no route</td>
+<td>No Portkey config header and no default config set</td>
+<td>Set a default config in the AIGW control plane for your workspace</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decode the token to inspect claims:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-built_in">echo</span> <span class="hljs-variable">$TOKEN</span> | <span class="hljs-built_in">cut</span> -d. -f2 | <span class="hljs-built_in">base64</span> -d 2&gt;/dev/null | python3 -m json.tool
+</div></code></pre>
+<h2 id="updating-credentials">Updating credentials</h2>
+<p>If you rotate the EntraID app registration or move to a different tenant, update <code>ENTRAID_CLIENT_ID</code> / <code>ENTRAID_TENANT_ID</code> in:</p>
+<ol>
+<li><code>~/.claude/settings.json</code> (<code>env</code> block) — or the project-level <code>.claude/settings.json</code> if you used that approach</li>
+<li>Re-run <code>az login --tenant &lt;new-tenant-id&gt;</code> to refresh the CLI session</li>
+</ol>
+
+</body>
+</html>
